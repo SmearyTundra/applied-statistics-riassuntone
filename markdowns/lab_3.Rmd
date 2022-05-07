@@ -14,7 +14,7 @@ To perform principal component analysis, a schematic approach to follow is:
 
 2.  PERFORM PCA
 
--   use **princomp** command
+-   use `princomp` command
 -   barplot the percentage of **var explained** by each principal component
 -   plot the **loadings** of the PCs and try to give an interpretation
 
