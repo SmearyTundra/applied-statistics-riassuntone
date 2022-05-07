@@ -1,0 +1,2 @@
+# applied statistics riassuntone
+ 
