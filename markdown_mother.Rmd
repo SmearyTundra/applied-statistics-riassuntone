@@ -1,0 +1,46 @@
+---
+title: ":("
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_section: yes
+---
+```{r setup, include=FALSE}
+path_images =paste(here::here("images"),"/", sep="")
+knitr::opts_chunk$set(fig.path = path_images,echo = TRUE,dev = "png",
+                      dpi = 300, cache=TRUE)
+
+```
+
+```{r child=here::here("markdowns","lab_1.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_2.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_3.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_4.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_5.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_6.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_7.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_8.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_9.rmd")}
+
+```
+```{r child=here::here("markdowns","lab_10.rmd")}
+
+```
+
