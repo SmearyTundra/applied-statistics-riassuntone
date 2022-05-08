@@ -1,37 +1,37 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 \newpage
 
-# LAB 5: 
+# LAB 5: Box-Cox transformations, tests and confidence regions for the mean of a multivariate Gaussian
 
-
-###--------------------###
-### LAB 5 (24/03/2022) ###
-###--------------------###
-
-### TOPIC:
-### Box-Cox transformations
-### Tests and confidence regions for the mean of a multivariate Gaussian
-
+```{r}
 library(car)
 library(mvtnorm)
+```
 
-setwd("~/Corsi/Statistica Applicata/Applied Statistics MATE 21-22/Lab 5 - 24032022")
-load("mcshapiro.test.RData")
+# Box-Cox transformations
 
-#_______________________________________________________________________________
-### Box-Cox transformations
+## Univariate Box-Cox transformation (Johnson-Wichern Chap. 4.8).
 
-###########################################################################
-### Univariate Box-Cox transformation (Johnson-Wichern Chap.4.8)
-# The Box-Cox transformations are based on the family of power transformation
-# (for x>0)
-# x_lambda = (x^lambda-1)/lambda if lambda!=0
-#            ln(x)               if lambda==0
-# that is continuous in lambda for x>0.
-# The parameter lambda is determined as the maximum likelihood solution
-# under the Gaussian assumption (see J-W)
+The Box-Cox transformations are based on the family of power transformation, for $x>0$.
+$$
+  x_\lambda =
+    \begin{cases}
+      \frac{x^\lambda-1}{\lambda} & \lambda \neq 0\\
+      \ln(x)                      & \lambda = 0
+    \end{cases}
+$$
+that is continuous in $\lambda$ for $x>0$.
 
-# Let's plot the transformations for some values of lambda
+The parameter lambda is determined as the maximum likelihood solution under the Gaussian assumption (see J-W).
 
+When $\lambda=1$ the transformation is linear, thus *useless*, since linear transformations don't change normality (i.e. if it wasn't normal, it won't be normal).
+
+Let's plot the transformations for some values of $\lambda$
+```{r}
 box_cox <- function(x,lambda)
 {
   if(lambda!=0)
@@ -41,77 +41,84 @@ box_cox <- function(x,lambda)
 
 x<-seq(0,25,by=0.01)
 
-x11()
-plot(x,box_cox(x,0),col='gold',type='l',xlab='x',ylab=expression(x[lambda]),ylim=c(-20,30),xlim=c(-5,25),asp=1)
-title(main='Traformazioni di Box-Cox')
-curve(box_cox(x,-1),from=0,to=25,col='blue',add=TRUE)
-curve(box_cox(x,1),from=0,to=25,col='red',add=TRUE)
-curve(box_cox(x,2),from=0,to=25,col='springgreen',add=TRUE)
+plot(x,box_cox(x,0),
+     col='gold',type='l',asp=1,
+     xlab='x',ylab=expression(x[lambda]),
+     ylim=c(-20,30),xlim=c(-2,25))
+title(main='Box-Cox transformations')
+curve(box_cox(x,-1),from=0,to=25,add=TRUE,col='blue')
+curve(box_cox(x, 1),from=0,to=25,add=TRUE,col='red')
+curve(box_cox(x, 2),from=0,to=25,add=TRUE,col='springgreen')
 points(1,0,pch=19,col='black')
-abline(v=0,lty=2,col='grey')
-legend('topright',c(expression(paste(lambda,'=-1')),expression(paste(lambda,'=0')),
-                    expression(paste(lambda,'=1')),expression(paste(lambda,'=2'))),col=c('blue','gold','red','springgreen'),lty=c(1,1,1,1,1))
+abline(v=0,lty=2 ,col='grey')
+legend('topright',
+       c(expression(paste(lambda,'=-1')),
+         expression(paste(lambda,'= 0')),
+         expression(paste(lambda,'= 1')),
+         expression(paste(lambda,'= 2'))),
+       col=c('blue','gold','red','springgreen'),lty=c(1,1,1,1,1))
 
-xx=seq(0.01,20.01,.05)
+xx = seq(0.01,20.01,.05)
 
 par(cex=.5)
-points(xx, rep(0,length(xx)), col='grey', pch=19)
-points(-.5+rep(0,length(xx)),box_cox(xx,-1),  col='blue', pch=19)
-points(-.5+rep(-.5,length(xx)),log(xx),  col='gold', pch=19)
-points(-.5+rep(-1,length(xx)),box_cox(xx,1), col='red', pch=19)
-points(-.5+rep(-1.5,length(xx)),box_cox(xx,2), col='springgreen', pch=19)
+points(xx, rep(  0  ,length(xx)), col='grey', pch=19, lwd=0.5)
+points(-.5+rep(  0  ,length(xx)),box_cox(xx,-1),col='blue',        pch=19)
+points(-.5+rep(-  .5,length(xx)),log(xx),       col='gold',        pch=19)
+points(-.5+rep(- 1  ,length(xx)),box_cox(xx,1), col='red',         pch=19)
+points(-.5+rep(- 1.5,length(xx)),box_cox(xx,2), col='springgreen', pch=19)
 points(1,0,pch=19,col='black')
+```
 
-# For lambda<1: observations <1 are "spread", observations >1 are "shrinked"
-# For lambda>1: observations <1 are "shrinked", observations >1 are "spread"
+- For $\lambda<1$: observations $<1$ are "spread", observations $>1$ are "shrinked"
+- For $\lambda>1$: observations $<1$ are "shrinked", observations $>1$ are "spread"
 
-graphics.off()
+### A trivial example
 
-##### A trivial example
+```{r}
 n <- 100
-
 set.seed(24032022)
 x <- rnorm(n)^2
 
-x11()
 hist(x, col='grey', prob=T, xlab='x', main ='Histogram of X')
 points(x,rep(0,n), pch=19)
-# we would need to spread the obs with small values and shrink the obs with large values
-# => we expect a small lambda (lambda<1)
+```
+We would need to spread the observations with small values and shrink the ones with large values. We expect a small lambda ($\lambda<1$).
 
-# Univariate Box-Cox transformation
-# We compute the optimal lambda of the univariate Box-Cox transformation
-# (command powerTransform of library car)
+We compute the optimal lambda of the univariate Box-Cox transformation (command `powerTransform` of library `car`)
+```{r}
 lambda.x <- powerTransform(x) 
 lambda.x
-# lambda<1: observations <1 are "spread", observations >1 are "shrinked"
+```
 
-# Transformed sample with the optimal lambda (command bcPower of library car)
-bc.x <- bcPower(x, lambda.x$lambda)      # it transforms the data of the first argument through the Box-Cox 
-                                         # transformation with lambda given as second argument
+Transformed sample with the optimal lambda (command `bcPower` of library `car`)
+```{r}
+bc.x <- bcPower(x, lambda.x$lambda)
+
 hist(bc.x, col='grey', prob=T, main='Histogram of BC(X)', xlab='BC(x)')
 points(bc.x,rep(0,n), pch=19)
 
 shapiro.test(x)
 shapiro.test(bc.x)
+```
 
-### Multivariate Box-Cox transformation (Johnson-Wichern Cap.4.8)
-# Similar to univariate transformation, but jointly on all the variables
+## Multivariate Box-Cox transformation (Johnson-Wichern Cap.4.8)
+Similar to univariate transformation, but jointly on all the variables
+```{r echo=FALSE}
 rm(x)
+```
 
-##### Simulated Example
-b <- read.table('data_sim.txt')
+Simulated Example
+```{r}
+b <- read.table(here::here('markdowns','lab_5_data','data_sim.txt'))
 head(b)
 dim(b)
 
 attach(b)
 
-x11()
 plot(b,pch=19,main='Data', xlim=c(1,7), ylim=c(-20,800))
 points(x, rep(-20,dim(b)[1]), col='red', pch=19)
 points(rep(1,dim(b)[1]), y, col='blue', pch=19)
 
-x11()
 par(mfrow=c(2,2))
 
 hist(x, prob=T,col='grey85')
@@ -125,62 +132,67 @@ qqline(x)
 
 qqnorm(y, main='QQplot of y')
 qqline(y)
-# For y: left tail too light, right tail too heavy
-
+```
+For `y`: left tail too light, right tail too heavy.
+```{r}
 shapiro.test(x)
 shapiro.test(y)
-
-graphics.off()
-
+load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 mcshapiro.test(b)
+```
 
-### Bivariate Box-Cox transformation
-# Compute the optimal lambda of a bivariate Box-Cox transformation
-# (command powerTransform, with a multivariate input)
+Bivariate Box-Cox transformation.
+
+Compute the optimal lambda of a bivariate Box-Cox transformation (command `powerTransform`, with a multivariate input)
+```{r}
 lambda <- powerTransform(cbind(x,y))
 lambda
-# lambda[1] close to 1 
+```
 
-# lambda[2] close to 0, it is almost a log transform; 
-# lambda[2]<1:  obs <1 "spred", obs >1 "shrinked" 
-# => it adds weight to the left tail, lightens the right tail
+- `lambda[1]` close to $1$.
+- `lambda[2]` close to $0$, it is almost a log transform. Obs $<1$ "spred", obs $>1$ "shrinked": it adds weight to the left tail, lightens the right tail.
 
-# Compute the transformed data with optimal lambda (of the bivariate transf.)
-# (command bcPower)
+Compute the transformed data with optimal lambda (of the bivariate transf.) (command `bcPower`)
+```{r}
 BC.x <- bcPower(x, lambda$lambda[1])
 BC.y <- bcPower(y, lambda$lambda[2])
 
 xx <- seq(0,7,by=0.01)
 
-x11(width=21, height=7)
 par(mfrow=c(1,3))
 
-plot(xx,box_cox(x=xx,lambda=lambda$lambda[1]),col='red',lty=1,type='l',xlab=expression(x),ylab=expression(x[lambda]),ylim=c(-5,10),asp=1)
+plot(xx,box_cox(x=xx,lambda=lambda$lambda[1]),
+     col='red',lty=1,type='l',asp=1,
+     xlab=expression(x),ylab=expression(x[lambda]),
+     ylim=c(-5,10))
 title(main='Box-Cox transformation')
 lines(xx,box_cox(x=xx,lambda=lambda$lambda[2]),col='blue')
 points(1,0,pch=19,col='black')
 abline(a=-1,b=1,lty=2,col='grey')
-legend('bottomright',c(expression(lambda[x]),expression(lambda[y]),expression(paste(lambda,'=1'))),col=c('blue','red','grey'),lty=c(1,1,1))
+legend('bottomright',c(expression(lambda[x]),
+                       expression(lambda[y]),
+                       expression(paste(lambda,'=1'))),
+       col=c('blue','red','grey'),lty=c(1,1,1))
 
 plot(b,pch=19,main='Data',xlim=c(1,7))
-points(rep(1,200),y,pch=19,col='blue') # projection on y
-points(x,rep(-20,200),pch=19,col='red')  # projection on x
+points(rep(1,200),y,           pch=19,col='blue') # projection on y
+points(x,         rep(-20,200),pch=19,col='red')  # projection on x
 
 plot(BC.x,BC.y,pch=19,main='Bivariate BC',xlim=c(0,5))
-points(rep(0,200),BC.y,pch=19,col='blue') # projection on y
-points(BC.x,rep(0.7,200),pch=19,col='red')  # projection on x
+points(rep(0,200),BC.y,        pch=19,col='blue') # projection on y
+points(BC.x,      rep(0.7,200),pch=19,col='red')  # projection on x
 
-graphics.off()
+```
 
-# Let's formulate an hypothesis of transformation:
-# since we get lambda[1]~1 and lambda[2]~0, we could reasonably consider:
+Let's formulate an hypothesis of transformation: since we get `lambda[1]`~1 and `lambda[2]`~0, we could reasonably consider:
+```{r}
 hyp.x <- x
 hyp.y <- log(y)
+```
 
-# Remark: from the application-oriented viewpoint, explaining a log
-# transform could be simpler than introducing Box-Cox transformations
+Remark: from the application-oriented viewpoint, explaining a log transform could be **simpler** than introducing Box-Cox transformations.
 
-x11(width=14, height=10)
+```{r}
 par(mfrow=c(3,3))
 plot(b,pch=19,main='Data',xlim=c(1,7))
 points(rep(1,200),y,pch=19,col='blue')   # projection on y
@@ -198,13 +210,14 @@ qqnorm(x, main="x",col='red')
 qqnorm(BC.x, main="BC.x",col='red')
 qqnorm(hyp.x, main="hyp.x",col='red')
 
-qqnorm(y, main="y",col='blue')
-qqnorm(BC.y, main="BC.y",col='blue')
+qqnorm(y,     main="y",    col='blue')
+qqnorm(BC.y,  main="BC.y", col='blue')
 qqnorm(hyp.y, main="hyp.y",col='blue')
 
-dev.off()
+```
 
-# Univariate Shapiro-Wilk (H0: univariate gaussianity along a given direction)
+**Univariate Shapiro-Wilk** ($H_0$: univariate Gaussianity along a given direction)
+```{r}
 shapiro.test(x)$p
 shapiro.test(BC.x)$p
 shapiro.test(hyp.x)$p
@@ -212,47 +225,54 @@ shapiro.test(hyp.x)$p
 shapiro.test(y)$p
 shapiro.test(BC.y)$p
 shapiro.test(hyp.y)$p
+```
 
-# MC-Shapiro test (H0: multivariate gaussianity)
+**MC-Shapiro test** ($H_0$: multivariate Gaussianity)
+```{r}
 mcshapiro.test(cbind(x,y))$p
 mcshapiro.test(cbind(BC.x,BC.y))$p
 mcshapiro.test(cbind(hyp.x,hyp.y))$p
+```
+High p-value for the transformed data: with the obtained transformation we have no evidence of non-gaussianity, i.e., we can assume that the transformed data are Gaussian
 
-# High p-value for the transformed data: with the obtained transformation we
-# have no evidence of non-gaussianity, i.e., we can assume that the transformed
-# data are Gaussian
-
+```{r echo=FALSE}
 detach(b)
+```
 
-graphics.off()
+## Box-Cox transformation on the dataset `stiff`
 
-### Box-Cox transformation on the dataset stiff
-
-stiff <- read.table('stiff.dat')
+```{r}
+stiff <- read.table(here::here('markdowns','lab_5_data','stiff.dat'))
 head(stiff)
 dim(stiff)
 
 lambda.mult <- powerTransform(stiff)    
 lambda.mult
 
-BC.x <- bcPower(stiff[,1],  lambda.mult$lambda[1]) 
-BC.y <- bcPower(stiff[,2],  lambda.mult$lambda[2])
-BC.z <- bcPower(stiff[,3],  lambda.mult$lambda[3]) 
-BC.w <- bcPower(stiff[,4],  lambda.mult$lambda[4])
+BC.x <- bcPower(stiff[,1], lambda.mult$lambda[1]) 
+BC.y <- bcPower(stiff[,2], lambda.mult$lambda[2])
+BC.z <- bcPower(stiff[,3], lambda.mult$lambda[3]) 
+BC.w <- bcPower(stiff[,4], lambda.mult$lambda[4])
+```
 
-# Plot of the original variables
+### Plot of the original variables
+```{r}
 attach(stiff)
-x11(width=14, height=7)
+
 par(mfrow=c(2,4))
+
 xx<-seq(1320,3000,length=100)
 hist(V1, prob=T,breaks=8,col='grey85')
 lines(xx, dnorm(xx,mean(V1),sd(V1)), col='blue', lty=2)
+
 yy<-seq(1150,2800,length=100)
 hist(V2, prob=T,breaks=8,col='grey85')
 lines(yy, dnorm(yy,mean(V2),sd(V2)), col='blue', lty=2)
+
 zz<-seq(1000,2420,length=100)
 hist(V3, prob=T,breaks=8,col='grey85')
 lines(zz, dnorm(zz,mean(V3),sd(V3)), col='blue', lty=2)
+
 ww<-seq(1100,2600,length=100)
 hist(V4, prob=T,breaks=8,col='grey85')
 lines(ww, dnorm(ww,mean(V4),sd(V4)), col='blue', lty=2)
@@ -270,19 +290,24 @@ qqnorm(V4, main='QQplot of V4')
 qqline(V4)
 
 detach(stiff)
+```
 
-# Plot of the transformed variables
-x11(width=14, height=7)
+### Plot of the transformed variables
+```{r}
 par(mfrow=c(2,4))
+
 xx<-seq(10,12,length=100)
 hist(BC.x, prob=T,breaks=8,col='grey85')
 lines(xx, dnorm(xx,mean(BC.x),sd(BC.x)), col='blue', lty=2)
+
 yy<-seq(3,3.2,length=100)
 hist(BC.y, prob=T,breaks=8,col='grey85')
 lines(yy, dnorm(yy,mean(BC.y),sd(BC.y)), col='blue', lty=2)
+
 zz<-seq(12,15,length=100)
 hist(BC.z, prob=T,breaks=8,col='grey85')
 lines(zz, dnorm(zz,mean(BC.z),sd(BC.z)), col='blue', lty=2)
+
 ww<-seq(250,500,length=100)
 hist(BC.w, prob=T,breaks=8,col='grey85')
 lines(ww, dnorm(ww,mean(BC.w),sd(BC.w)), col='blue', lty=2)
@@ -298,45 +323,48 @@ qqline(BC.z)
 
 qqnorm(BC.w, main='QQplot of BC.w')
 qqline(BC.w)
-
-# One transformed variable at a time
+```
+One transformed variable at a time
+```{r}
 shapiro.test(BC.x)
 shapiro.test(BC.y)
 shapiro.test(BC.z)
 shapiro.test(BC.w)
+```
+All together
+```{r}
+mcshapiro.test(cbind(BC.x,
+                     BC.y,
+                     BC.z,
+                     BC.w))
+```
+We have Gaussianity.
 
-# All together
-mcshapiro.test(cbind(BC.x,BC.y,BC.z,BC.w))
+Note: the higher the dimensionality, the more difficult to recover the Gaussianity.
 
-# Note: the higher the dimensionality, the more difficult to 
-# recover the gaussianity
+In this case, Box-Cox transformations are not enough. We saw that removing outliers indeed solves the problems of non-Gaussianity.
 
-# In this case, Box-Cox transformations are not enough. We saw that removing
-# outliers indeed solve the problems of non-Gaussianity.
-# Alternative approaches:
-# - Asymptotics
-# - Non-parametrics (e.g., permutation tests)
+Alternative approaches:
 
-graphics.off()
+- Asymptotics
+- Non-parametrics (e.g., permutation tests)
 
+# Tests and confidence regions for the mean of a multivariate Gaussian
 
+Example with simulated data from a bivariate Gaussian
 
-#_______________________________________________________________________________
-### Tests and confidence regions for the mean of a multivariate Gaussian
-
-### Example with simulated data from a bivariate Gaussian
+```{r}
+rm(list = ls())
 
 mu <- c(1,0)
 sig <- matrix(c(1,1,1,2),nrow=2)
 
 set.seed(123)
 x <- rmvnorm(n=30, mean=mu, sigma=sig)
-x <- data.frame(X.1=x[,1],X.2=x[,2])
+x <- data.frame(X.1=x[,1],
+                X.2=x[,2])
 
-x11()
 plot(x, asp = 1,pch=19)
-
-dev.off()
 
 n <- dim(x)[1]
 p <- dim(x)[2]
@@ -344,149 +372,160 @@ p <- dim(x)[2]
 x.mean   <- sapply(x,mean)
 x.cov    <- cov(x)
 x.invcov <- solve(x.cov)
+```
 
-#_______________________________________________________________________________
-### Test for the mean of a multivariate Gaussian 
+Premise: general rule to perform a test
 
-################################################################################
-# Premise: general rule to perform a test
-# 1)  Formulate the test (and test the Gaussian assumption, if needed)
-# 2)  Compute the test statistics 
-# 3a) Having set the level of the test, verify whether the test statistics 
-#     belongs to the region of rejection (i.e., if there is statistical  
-#     evidence to reject H0)
-# 3b) Compute the p-value of the test
-################################################################################
+1. Formulate the test (and test the Gaussian assumption, if needed)
+2. Compute the test statistics 
+3.
+  1. Having set the level of the test, verify whether the test statistics belongs to the region of rejection (i.e., if there is statistical evidence to reject $H_0$)
+  2. Compute the p-value of the test
 
-#_______________________________________________________________________________
-### Test on the mean of level alpha=1%
-### H0: mu == mu0 vs H1: mu != mu0
-### with mu0=c(1,0)
-###-----------------------------------
-load("mcshapiro.test.RData")
+## Test on the mean of level `alpha=1%`
+
+$H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1,0)`
+
+```{r}
+load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 mcshapiro.test(x)
 
 alpha <- 0.01
-mu0 <- c(1,0)
+mu0   <- c(1,0)
+```
+**$T_0^2$ Statistics**
+```{r}
+x.T2 <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0)
+```
+**Radius of the ellipsoid** (case when `n` is small and we need Gaussianity)
+```{r}
+cfr.fisher <- (n-1)*p/(n-p) * qf(1-alpha,p,n-p)
+```
+Test:
+```{r}
+x.T2 < cfr.fisher
+```
+No statistical evidence to reject $H_0$ at level `alpha`.
 
-# T2 Statistics
-x.T2       <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
-# Radius of the ellipsoid
-cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
-# Test: 
-x.T2 < cfr.fisher   # no statistical evidence to reject H0 at level alpha
-# Rejection region: {x.T2>cfr.fisher}
-# (we reject for large values of the T2 statistics)
-
-# Compute the p-value 
+**Compute the p-value**
+```{r}
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
-
-x11()
+```
+Density of the Fisher distribution
+```{r}
 xx <- seq(0,40,by=0.05)
-plot(xx,df(xx*(n-p)/((n-1)*p),p,n-p),type="l",lwd=2,main='Density F(p,n-p)',xlab='x*(n-p)/((n-1)*p)',ylab='Density')
+plot(xx,df(xx*(n-p)/((n-1)*p),p,n-p),
+     type="l",lwd=2,
+     main='Density F(p,n-p)',
+     xlab='x*(n-p)/((n-1)*p)',ylab='Density')
 abline(h=0,v=x.T2*(n-p)/((n-1)*p),col=c('grey','red'),lwd=2,lty=c(2,1))
-# The P-value is high because the test statistics is central with respect to 
-# its distribution under H0
-# => we cannot reject for any reasonable level (we would reject for a level alpha>81.7%)
+```
+The P-value is high because the test statistics is central with respect to its distribution under $H_0$.
 
-dev.off()
+We cannot reject for any reasonable level (we would reject for a level `alpha>81.7%`)
 
-# Region of rejection (centered in mu0)
-x11()
+```{r}
 plot(x, asp = 1)
+
+# Rejection region, centered in mu0 (we reject for large values of the T2 statistics)
 ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
 
 # We add a red point in correspondence of the sample mean
 points(x.mean[1], x.mean[2], pch = 16, col ='red', cex = 1.5)
 
-# Confidence region (centered in x.mean)
+# Confidence region, centered in x.mean
 # { m \in R^2 s.t. n * (x.mean-m)' %*% (x.cov)^-1 %*% (x.mean-m) < cfr.fisher }
 
-ellipse(x.mean, x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, lwd=2, center.cex=1)
+ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, lwd=2, center.cex=1)
+```
+Remark: the radius and the shape of the ellipse are the same, but the center changes:
 
-# Remark: the radius and the shape of the ellipse are the same, but the center changes:
-# - Rejection region: the center is the mean mu0 under H0 (blue ellipse)
-# - Confidence region: the center is the sample mean (red ellipse)
+- **Rejection region**: the center is the mean `mu0` under $H_0$ (blue ellipse)
+- **Confidence region**: the center is the sample mean (red ellipse)
 
-# Which relation between the two ellipses?
-# - If the rejection region does NOT contain the sample mean (i.e., we
-#   are in the acceptance region), then we cannot reject H0 
-#   (i.e., if the sample mean falls within the ellipse we accept H0)
-# - If the mean under H0 (mu0) is contained in the confidence region
-#   of level 1-alpha, then we do not reject H0 at level alpha
-# => the confidence region of level 1-alpha contains all the mu0
-#    that we would accept at level alpha
+Which relationship holds between the two ellipses?
 
-# Note: by definition, the confidence region of level 1-alpha
-# produces ellipsoidal regions that contain the true mean
-# 100(1-alpha)% of the times. If H0 is true (i.e., mu0 is 
-# the true mean), those ellipsoidal regions will contain mu0 
-# 100(1-alpha)% of the times
+- If the rejection region does NOT contain the sample mean (i.e., we are in the acceptance region), then we cannot reject $H_0$  (i.e., if the sample mean falls within the ellipse we accept $H_0$)
+- If the mean under $H_0$ (`mu0`) is contained in the confidence region of level 1-alpha, then we do not reject $H_0$ at level `alpha`
 
-#_______________________________________________________________________________
-### Asymptotic test on the mean
-### H0: mu == mu0 vs H1: mu != mu0
-### with mu0=c(1,0)
-###---------------------------------------------
+The confidence region of level `1-alpha` contains all the `mu0` that we would accept at level `alpha`.
 
-# Note: we don't need to verify the Gaussian assumption!
-# Warning: we are going to use an asymptotic test, but we only have n = 30 data!
+Note: by definition, the confidence region of level `1-alpha` produces ellipsoidal regions that contain the true mean `100(1-alpha)%` of the times. If $H_0$ is true (i.e., `mu0` is  the true mean), those ellipsoidal regions will contain `mu0` `100(1-alpha)%` of the times
 
+## Asymptotic test on the mean (`n` large)
+$H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1,0)` (same as before).
+
+Note: *we don't need to verify the Gaussianity assumption!*
+
+Warning: we are going to use an asymptotic test, but we only have `n=30`!
+
+```{r}
+alpha <- 0.01
 mu0   <- c(1,0)
-
-x.T2A   <- n * (x.mean-mu0) %*%  x.invcov  %*% (x.mean-mu0)
+```
+**$T_0^2$ Statistics**
+```{r}
+x.T2A <- n * (x.mean-mu0) %*%  x.invcov  %*% (x.mean-mu0)
 cfr.chisq <- qchisq(1-alpha,p)
-x.T2A < cfr.chisq # no statistical evidence to reject H0 at level alpha
+x.T2A < cfr.chisq
+```
+No statistical evidence to reject $H_0$ at level `alpha`.
 
-# Compute the p-value
+**Compute the p-value**
+```{r}
 PA <- 1-pchisq(x.T2A, p)
 PA
 
-x11(width=14, height=7)
 par(mfrow=c(1,2))
 plot(x, asp = 1,main='Comparison rejection regions')
-ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
-ellipse(mu0, x.cov/n, sqrt(cfr.chisq), col = 'lightblue', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
-points(mu0[1], mu0[2], pch = 4, cex = 1.5, lwd = 2, col ='lightblue')
-legend('topleft', c('Exact', 'Asymptotic'),col=c('blue','lightblue'),lty=c(1),lwd=2)
+ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher),
+        col = 'blue',      lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
+ellipse(mu0, x.cov/n, sqrt(cfr.chisq),
+        col = 'lightblue', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
+points(mu0[1], mu0[2],
+       pch = 4, cex = 1.5, lwd = 2, col ='lightblue')
+legend('topleft', c('Exact', 'Asymptotic'),
+       col=c('blue','lightblue'),lty=c(1),lwd=2)
 
 plot(x, asp = 1,main='Comparison of confidence regions')
-ellipse(x.mean, x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
-ellipse(x.mean, x.cov/n, sqrt(cfr.chisq), col = 'orange', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
+ellipse(x.mean, x.cov/n, sqrt(cfr.fisher),
+        col = 'red',    lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
+ellipse(x.mean, x.cov/n, sqrt(cfr.chisq),
+        col = 'orange', lty = 1, center.pch = 4, center.cex=1.5, lwd=2)
 points(x.mean[1], x.mean[2], pch = 4, cex = 1.5, lwd = 2, col ='orange')
-legend('topleft', c('Exact', 'Asymptotic'),col=c('red','orange'),lty=c(1),lwd=2)
+legend('topleft', c('Exact', 'Asymptotic'),
+       col=c('red','orange'),lty=c(1),lwd=2)
 
-graphics.off()
-
-#_______________________________________________________________________________
-###  We change the null Hypothesis  
-###-------------------------------
+```
+**We change the null Hypothesis**
+```{r}
 mu0 <- c(1.5,-0.5)
 mu0
 
 mu
+```
+Remark: now $H_0$ is false (we will want to reject it).
 
-# Remark: now H0 is false (we will want to reject H0)
+Test of level `1%`
+$H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1.5,-0.5)`
 
-### Test of level 1%
-### H0: mu == mu0=c(1.5,-0.5) vs H1: mu != mu0=c(1.5,-0.5) 
-###--------------------------------------------------
-
-### Ellipsoidal region
-x.T2 <- n * t(x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
-x.T2 < cfr.fisher
-
-# Compute the p-value
-P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
+**$T_0^2$ Statistics**
+```{r}
+x.T2false <- n * t(x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
+x.T2false < cfr.fisher
+```
+**Compute the p-value**
+```{r}
+P <- 1-pf(x.T2false*(n-p)/((n-1)*p), p, n-p)
 P
 
-x11()
 plot(x, asp = 1)
-ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
-points(x.mean[1], x.mean[2], pch = 16, col = 'red', cex=1.5)
-
-dev.off()
+ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher),
+        col = 'blue', lty = 2, center.pch = 16)
+points(x.mean[1], x.mean[2],
+       pch = 16, col = 'red', cex=1.5)
+```
 
 # How would we communicate the results?
 # For instance, we could provide confidence intervals along interesting
