@@ -512,7 +512,7 @@ $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1.5,-0.5)`
 
 **$T_0^2$ Statistics**
 ```{r}
-x.T2false <- n * t(x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
+x.T2false <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
 x.T2false < cfr.fisher
 ```
 **Compute the p-value**
