@@ -1,6 +1,8 @@
 ---
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
   chunk_output_type: console
 ---
 \newpage
@@ -412,7 +414,9 @@ No statistical evidence to reject $H_0$ at level `alpha`.
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
 ```
+
 Density of the Fisher distribution
+
 ```{r}
 xx <- seq(0,40,by=0.05)
 plot(xx,df(xx*(n-p)/((n-1)*p),p,n-p),
@@ -421,6 +425,7 @@ plot(xx,df(xx*(n-p)/((n-1)*p),p,n-p),
      xlab='x*(n-p)/((n-1)*p)',ylab='Density')
 abline(h=0,v=x.T2*(n-p)/((n-1)*p),col=c('grey','red'),lwd=2,lty=c(2,1))
 ```
+
 The P-value is high because the test statistics is central with respect to its distribution under $H_0$.
 
 We cannot reject for any reasonable level (we would reject for a level `alpha>81.7%`)
@@ -439,6 +444,7 @@ points(x.mean[1], x.mean[2], pch = 16, col ='red', cex = 1.5)
 
 ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, lwd=2, center.cex=1)
 ```
+
 Remark: the radius and the shape of the ellipse are the same, but the center changes:
 
 - **Rejection region**: the center is the mean `mu0` under $H_0$ (blue ellipse)
@@ -470,6 +476,7 @@ x.T2A <- n * (x.mean-mu0) %*%  x.invcov  %*% (x.mean-mu0)
 cfr.chisq <- qchisq(1-alpha,p)
 x.T2A < cfr.chisq
 ```
+
 No statistical evidence to reject $H_0$ at level `alpha`.
 
 **Compute the p-value**
@@ -505,6 +512,7 @@ mu0
 
 mu
 ```
+
 Remark: now $H_0$ is false (we will want to reject it).
 
 Test of level `1%`
@@ -537,6 +545,7 @@ For instance, we could provide **confidence intervals** along interesting direct
 Let's try with simultaneous T2 confidence intervals on the coordinate directions.
 
 Recall: these are projections of the ellipsoidal confidence region.
+
 ```{r}
 
 T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
@@ -544,6 +553,7 @@ T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
             sup = x.mean + sqrt(cfr.fisher*diag(x.cov)/n))
 T2
 ```
+
 Both the intervals contain the mean under $H_0$ (i.e., `mu0` is contained in the rectangular region determined by the projection of the ellipsoid along the coordinate directions)
 
 Remark: this is not in contrast with the previous findings. Rejecting the global T2-test means that we reject $H_0$ along at least one direction, not necessarily along the coordinate direction.
@@ -562,6 +572,7 @@ rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
 ### Simultaneous Bonferroni confidence intervals
 
 Let's try with **Bonferroni confidence intervals**
+
 ```{r}
 k <- p # number of intervals I want to compute (set in advance)
 cfr.t <- qt(1-alpha/(2*k),n-1)
@@ -570,9 +581,11 @@ Bf <- cbind(inf = x.mean - cfr.t*sqrt(diag(x.cov)/n),
             sup = x.mean + cfr.t*sqrt(diag(x.cov)/n))
 Bf
 ```
+
 Both the intervals contain the mean under $H_0$ (i.e., `mu0` is contained in the rectangular region determined by the Bonferroni intervals along the coordinate directions).
 
 We add the Bonferroni intervals to the plot
+
 ```{r}
 plot(x, asp = 1,main='Confidence and rejection regions')
 
@@ -584,8 +597,10 @@ rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
 
 # adding Bonferroni
 rect(Bf[1,1],Bf[2,1],Bf[1,3],Bf[2,3], border='orange', lwd=2)
-legend('topleft', c('Rej. Reg.', 'Conf. Reg','T2-sim', 'Bonferroni'),col=c('blue','red','red','orange'),lty=c(2,2,1,1),lwd=2)
+legend('topleft', c('Rej. Reg.', 'Conf. Reg','T2-sim', 'Bonferroni'),
+       col=c('blue','red','red','orange'),lty=c(2,2,1,1),lwd=2)
 ```
+
 Remark: if we wanted to compute additional Bonferroni intervals along other directions, we would need to re-compute all the Bonferroni intervals with another correction `k`.
 
 # Example: analysis of a real dataset (dataset `stiff`)
@@ -600,11 +615,15 @@ p <- dim(stiff)[2]
 
 plot(stiff,pch=19)
 ```
+
 Test of Gaussianity
+
 ```{r}
 mcshapiro.test(stiff)
 ```
+
 We reject Gaussianity; to recover it, we remove 4 outliers (see `LAB_4.R`)
+
 ```{r}
 x.mean <- colMeans(stiff)
 x.cov <- cov(stiff)
@@ -640,6 +659,7 @@ x.T2       <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0)
 cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
 x.T2 < cfr.fisher
 ```
+
 We accept $H_0$ at 5%.
 
 ### Compute the p-value
@@ -654,14 +674,19 @@ P
 2. Characterize the region: compute the center, direction of the principal axes, length of the axes
 
 Center
+
 ```{r}
 x.mean
 ```
+
 Directions of the principal axes
+
 ```{r}
 eigen(x.cov/n)$vectors
 ```
+
 Length of the semi-axes of the ellipse:
+
 ```{r}
 r <- sqrt(cfr.fisher)
 r*sqrt(eigen(x.cov/n)$values)
@@ -691,6 +716,7 @@ points(1:4, T2[,2], pch=16, col=1:4)
 
 points(1:4, mu0, lwd=3, col='orange')  # adding mu0
 ```
+
 Is `mu0` inside the rectangular region?
 
 Yes, it is, because it is inside all the T2-intervals.
@@ -704,9 +730,8 @@ Bf <- cbind(inf = x.mean - cfr.t*sqrt(diag(x.cov)/n),
             center = x.mean, 
             sup = x.mean + cfr.t*sqrt(diag(x.cov)/n))
 Bf
-```
-Let's do a plot
-```{r}
+
+
 matplot(1:4,1:4,pch='',ylim=range(stiff),
         xlab='Variables',ylab='Confidence intervals along a component',
         main='Confidence intervals')
@@ -726,6 +751,7 @@ points(1:4, Bf[,3], pch='-', col=1:4)
 
 points(1:4, mu0, lwd=3, col='orange') # adding mu0
 ```
+
 Is `mu0` inside the Bonferroni confidence region?
 
-Yes, it is, because it is inside all the intervals along the components
+Yes, it is, because it is inside all the intervals along the components.
