@@ -527,75 +527,85 @@ points(x.mean[1], x.mean[2],
        pch = 16, col = 'red', cex=1.5)
 ```
 
-# How would we communicate the results?
-# For instance, we could provide confidence intervals along interesting
-# directions (if they don't contain the mean under H0, it means that
-# we reject the associated univariate test along that direction)
+## Confidence intervals
 
-# Let's try with simultaneous T2 confidence intervals on the coordinate directions:
-# Recall: these are projections of the ellipsoidal confidence region
+**How would we communicate the results?**
+
+For instance, we could provide **confidence intervals** along interesting directions (if they don't contain the mean under $H_0$, it means that we reject the associated univariate test along that direction)
+
+### Simultaneous T2 confidence intervals
+Let's try with simultaneous T2 confidence intervals on the coordinate directions.
+
+Recall: these are projections of the ellipsoidal confidence region.
+```{r}
 
 T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
             center = x.mean, 
             sup = x.mean + sqrt(cfr.fisher*diag(x.cov)/n))
 T2
-# Both the intervals contain the mean under H0
-# (i.e., mu0 is contained in the rectangular region determined by
-# the projection of the ellipsoid along the coordinate directions)
+```
+Both the intervals contain the mean under $H_0$ (i.e., `mu0` is contained in the rectangular region determined by the projection of the ellipsoid along the coordinate directions)
 
-# Remark: this is not in contrast with the previous findings
-# Rejecting the global T2-test means that we reject H0 along at least one
-# direction, not necessarily along the coordinate direction
+Remark: this is not in contrast with the previous findings. Rejecting the global T2-test means that we reject $H_0$ along at least one direction, not necessarily along the coordinate direction.
 
-x11()
+```{r}
 par(mfrow=c(1,1))
+
 plot(x, asp = 1,main='Confidence and rejection regions')
+
+ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
+points(x.mean[1], x.mean[2], pch = 16, col = 'red', cex=1.5)
+
+ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, center.pch = 16)
+rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
+```
+### Simultaneous Bonferroni confidence intervals
+
+Let's try with **Bonferroni confidence intervals**
+```{r}
+k <- p # number of intervals I want to compute (set in advance)
+cfr.t <- qt(1-alpha/(2*k),n-1)
+Bf <- cbind(inf = x.mean - cfr.t*sqrt(diag(x.cov)/n),
+            center = x.mean,
+            sup = x.mean + cfr.t*sqrt(diag(x.cov)/n))
+Bf
+```
+Both the intervals contain the mean under $H_0$ (i.e., `mu0` is contained in the rectangular region determined by the Bonferroni intervals along the coordinate directions).
+
+We add the Bonferroni intervals to the plot
+```{r}
+plot(x, asp = 1,main='Confidence and rejection regions')
+
 ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
 points(x.mean[1], x.mean[2], pch = 16, col = 'red', cex=1.5)
 
 ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, center.pch = 16)
 rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
 
-# Let's try with Bonferroni intervals
-k <- p # number of intervals I want to compute (set in advance)
-cfr.t <- qt(1-alpha/(2*k),n-1)
-Bf <- cbind(inf = x.mean - cfr.t*sqrt(diag(x.cov)/n),
-            center = x.mean, 
-            sup = x.mean + cfr.t*sqrt(diag(x.cov)/n))
-Bf
-# Both the intervals contain the mean under H0
-# (i.e., mu0 is contained in the rectangular region determined by
-# the Bonferroni intervals along the coordinate directions)
-
-# we add the Bonferroni intervals to the plot
+# adding Bonferroni
 rect(Bf[1,1],Bf[2,1],Bf[1,3],Bf[2,3], border='orange', lwd=2)
 legend('topleft', c('Rej. Reg.', 'Conf. Reg','T2-sim', 'Bonferroni'),col=c('blue','red','red','orange'),lty=c(2,2,1,1),lwd=2)
+```
+Remark: if we wanted to compute additional Bonferroni intervals along other directions, we would need to re-compute all the Bonferroni intervals with another correction `k`.
 
-# Remark: if we wanted to compute additional Bonferroni intervals
-# along other directions, we would need to re-compute all the Bonferroni
-# intervals with another correction k
+# Example: analysis of a real dataset (dataset `stiff`)
 
-graphics.off()
-
-#_______________________________________________________________________________
-### Example: analysis of a real dataset (dataset stiff)
-
-stiff <- read.table('stiff.dat')
+```{r}
+stiff <- read.table(here::here('markdowns','lab_5_data','stiff.dat'))
 head(stiff)
 dim(stiff)
 
 n <- dim(stiff)[1]
 p <- dim(stiff)[2]
 
-x11()
 plot(stiff,pch=19)
-
-dev.off()
-
-### test of Gaussianity
+```
+Test of Gaussianity
+```{r}
 mcshapiro.test(stiff)
-
-# To recover Gaussianity, we remove 4 outliers (see LAB_4.R)
+```
+We reject Gaussianity; to recover it, we remove 4 outliers (see `LAB_4.R`)
+```{r}
 x.mean <- colMeans(stiff)
 x.cov <- cov(stiff)
 d2 <- matrix(mahalanobis(stiff, x.mean, x.cov))
@@ -606,84 +616,87 @@ mcshapiro.test(stiff)
 n <- dim(stiff)[1]
 p <- dim(stiff)[2]
 
-### Test for the mean of level 5%
-###--------------------------------
-# 1) Formulate the test:
-#    H0: mu == mu0 vs H1: mu != mu0
-#    with mu0=c(1850, 1750, 1500, 1700)
+```
 
+## Test for the mean at level 5%
+
+### Formulate the test
+$H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1850, 1750, 1500, 1700)`
+```{r}
 mu0   <- c(1850, 1750, 1500, 1700)
 alpha <- 0.05
-
-# 2) Compute the test statistics
+```
+### Compute the test statistics
+```{r}
 x.mean   <- colMeans(stiff)
 x.cov    <- cov(stiff)
 x.invcov <- solve(x.cov)
 
 x.T2       <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
+```
 
-# 3a) Verify if the test statistics belongs to the rejection region
+### Verify if the test statistics belongs to the rejection region
+```{r}
 cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
-x.T2 < cfr.fisher # we accept H0 at 5%
+x.T2 < cfr.fisher
+```
+We accept $H_0$ at 5%.
 
-# 3b) Compute the p-value
+### Compute the p-value
+```{r}
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
+```
 
-### Confidence region for the mean of level 95%
-###------------------------------------------------------------
-# 1)  Identify the type of region of interest:
-#     CR for the mean (ellipsoidal region) 
-#     { m \in R^4 t.c. n * (x.mean-m)' %*% x.invcov %*% (x.mean-m)
-#                                                  < cfr.fisher }
-# 2)  Characterize the region: compute the center, direction of 
-#     the principal axes, length of the axes
+## Confidence region for the mean of level 95%
 
-# Center:
+1. Identify the type of region of interest. CR for the mean (ellipsoidal region) `{m \in R^4 s.t. n * (x.mean-m)' %*% x.invcov %*% (x.mean-m) < cfr.fisher}`
+2. Characterize the region: compute the center, direction of the principal axes, length of the axes
+
+Center
+```{r}
 x.mean
-
-# Directions of the principal axes:
+```
+Directions of the principal axes
+```{r}
 eigen(x.cov/n)$vectors
-
-# Length of the semi-axes of the ellipse:
+```
+Length of the semi-axes of the ellipse:
+```{r}
 r <- sqrt(cfr.fisher)
-r*sqrt(eigen(x.cov/n)$values) 
-# Warning: Conf Reg => x.cov/n 
+r*sqrt(eigen(x.cov/n)$values)
+```
 
-# Question: how to plot the confidence region? 
-# (I don't know how to plot in R^4!)
-# I can work with 'representations' of the confidence regions
-# (e.g., projections along particular directions)
+Question: how to *plot* the confidence region? (we don't know how to plot in $R^4$) We can work with *representations* of the confidence regions (e.g., projections along particular directions).
 
-# We plot the projections of the ellipsoid in some directions 
-# of interest (e.g. the x and y coordinates)
-# => We plot the simultaneous T2 confidence intervals in each
-#    direction of interest (with global coverage alpha)
+We plot the projections of the ellipsoid in some directions of interest (e.g. the `x` and `y` coordinates).
 
-### Simultaneous T2 intervals on the components of the mean
-### with global level 95%
-###----------------------------------------------------
+We plot the simultaneous T2 confidence intervals in each direction of interest (with global coverage `alpha`).
 
+### Simultaneous T2 intervals on the components of the mean with global level 95%
+```{r}
 T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
             center = x.mean, 
             sup = x.mean + sqrt(cfr.fisher*diag(x.cov)/n))
 T2
 
-x11()
-matplot(1:4,1:4,pch='',ylim=range(stiff),xlab='Variables',ylab='T2 for a component', 
+matplot(1:4,1:4,pch='',ylim=range(stiff),
+        xlab='Variables', ylab='T2 for a component', 
         main='Simultaneous T2 conf. int. for the components')
-for(i in 1:4)segments(i,T2[i,1],i,T2[i,3],lwd=3,col=i)
+
+for(i in 1:4)
+  segments(i,T2[i,1],i,T2[i,3],lwd=3,col=i)
+
 points(1:4, T2[,2], pch=16, col=1:4)
 
-# Is mu0 inside the rectangular region?
-# We add it to the plot
-points(1:4, mu0, lwd=3, col='orange')
+points(1:4, mu0, lwd=3, col='orange')  # adding mu0
+```
+Is `mu0` inside the rectangular region?
 
-# Yes, it is, because it is inside all the T2-intervals,
+Yes, it is, because it is inside all the T2-intervals.
 
-### Bonferroni intervals on the components of the mean
-### with global level 95%
-###----------------------------------------------------
+### Bonferroni intervals on the components of the mean with global level 95%
+```{r}
 k <- p
 cfr.t <- qt(1 - alpha/(k*2), n-1)
 
@@ -691,24 +704,28 @@ Bf <- cbind(inf = x.mean - cfr.t*sqrt(diag(x.cov)/n),
             center = x.mean, 
             sup = x.mean + cfr.t*sqrt(diag(x.cov)/n))
 Bf
+```
+Let's do a plot
+```{r}
+matplot(1:4,1:4,pch='',ylim=range(stiff),
+        xlab='Variables',ylab='Confidence intervals along a component',
+        main='Confidence intervals')
 
-# Let's do a plot
-x11()
-matplot(1:4,1:4,pch='',ylim=range(stiff),xlab='Variables',ylab='Confidence intervals along a component',main='Confidence intervals')
+for(i in 1:4)
+  segments(i,T2[i,1],i,T2[i,3],lwd=2,col='grey35', lty=3)
 
-for(i in 1:4) segments(i,T2[i,1],i,T2[i,3],lwd=2,col='grey35', lty=3)
 points(1:4, T2[,1], pch='-', col='grey35')
 points(1:4, T2[,3], pch='-', col='grey35')
 
-for(i in 1:4) segments(i,Bf[i,1],i,Bf[i,3],lwd=2,col=i)
+for(i in 1:4)
+  segments(i,Bf[i,1],i,Bf[i,3],lwd=2,col=i)
+
 points(1:4, Bf[,2], pch=16, col=1:4)
 points(1:4, Bf[,1], pch='-', col=1:4)
 points(1:4, Bf[,3], pch='-', col=1:4)
 
-# Is mu0 inside the Bonferroni confidence region?
-# we add it to the plot
-points(1:4, mu0, lwd=3, col='orange')
+points(1:4, mu0, lwd=3, col='orange') # adding mu0
+```
+Is `mu0` inside the Bonferroni confidence region?
 
-# Yes, it is, because it belongs to all the intervals along the components
-
-graphics.off()
+Yes, it is, because it is inside all the intervals along the components
