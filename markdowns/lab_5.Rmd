@@ -33,6 +33,7 @@ The parameter lambda is determined as the maximum likelihood solution under the 
 When $\lambda=1$ the transformation is linear, thus *useless*, since linear transformations don't change normality (i.e. if it wasn't normal, it won't be normal).
 
 Let's plot the transformations for some values of $\lambda$
+
 ```{r}
 box_cox <- function(x,lambda)
 {
@@ -84,15 +85,18 @@ x <- rnorm(n)^2
 hist(x, col='grey', prob=T, xlab='x', main ='Histogram of X')
 points(x,rep(0,n), pch=19)
 ```
+
 We would need to spread the observations with small values and shrink the ones with large values. We expect a small lambda ($\lambda<1$).
 
 We compute the optimal lambda of the univariate Box-Cox transformation (command `powerTransform` of library `car`)
+
 ```{r}
 lambda.x <- powerTransform(x) 
 lambda.x
 ```
 
 Transformed sample with the optimal lambda (command `bcPower` of library `car`)
+
 ```{r}
 bc.x <- bcPower(x, lambda.x$lambda)
 
@@ -104,12 +108,15 @@ shapiro.test(bc.x)
 ```
 
 ## Multivariate Box-Cox transformation (Johnson-Wichern Cap.4.8)
+
 Similar to univariate transformation, but jointly on all the variables
+
 ```{r echo=FALSE}
 rm(x)
 ```
 
 Simulated Example
+
 ```{r}
 b <- read.table(here::here('markdowns','lab_5_data','data_sim.txt'))
 head(b)
@@ -135,7 +142,9 @@ qqline(x)
 qqnorm(y, main='QQplot of y')
 qqline(y)
 ```
+
 For `y`: left tail too light, right tail too heavy.
+
 ```{r}
 shapiro.test(x)
 shapiro.test(y)
@@ -146,6 +155,7 @@ mcshapiro.test(b)
 Bivariate Box-Cox transformation.
 
 Compute the optimal lambda of a bivariate Box-Cox transformation (command `powerTransform`, with a multivariate input)
+
 ```{r}
 lambda <- powerTransform(cbind(x,y))
 lambda
@@ -155,6 +165,7 @@ lambda
 - `lambda[2]` close to $0$, it is almost a log transform. Obs $<1$ "spred", obs $>1$ "shrinked": it adds weight to the left tail, lightens the right tail.
 
 Compute the transformed data with optimal lambda (of the bivariate transf.) (command `bcPower`)
+
 ```{r}
 BC.x <- bcPower(x, lambda$lambda[1])
 BC.y <- bcPower(y, lambda$lambda[2])
@@ -187,6 +198,7 @@ points(BC.x,      rep(0.7,200),pch=19,col='red')  # projection on x
 ```
 
 Let's formulate an hypothesis of transformation: since we get `lambda[1]`~1 and `lambda[2]`~0, we could reasonably consider:
+
 ```{r}
 hyp.x <- x
 hyp.y <- log(y)
@@ -219,6 +231,7 @@ qqnorm(hyp.y, main="hyp.y",col='blue')
 ```
 
 **Univariate Shapiro-Wilk** ($H_0$: univariate Gaussianity along a given direction)
+
 ```{r}
 shapiro.test(x)$p
 shapiro.test(BC.x)$p
@@ -230,11 +243,13 @@ shapiro.test(hyp.y)$p
 ```
 
 **MC-Shapiro test** ($H_0$: multivariate Gaussianity)
+
 ```{r}
 mcshapiro.test(cbind(x,y))$p
 mcshapiro.test(cbind(BC.x,BC.y))$p
 mcshapiro.test(cbind(hyp.x,hyp.y))$p
 ```
+
 High p-value for the transformed data: with the obtained transformation we have no evidence of non-gaussianity, i.e., we can assume that the transformed data are Gaussian
 
 ```{r echo=FALSE}
@@ -258,6 +273,7 @@ BC.w <- bcPower(stiff[,4], lambda.mult$lambda[4])
 ```
 
 ### Plot of the original variables
+
 ```{r}
 attach(stiff)
 
@@ -295,6 +311,7 @@ detach(stiff)
 ```
 
 ### Plot of the transformed variables
+
 ```{r}
 par(mfrow=c(2,4))
 
@@ -326,20 +343,25 @@ qqline(BC.z)
 qqnorm(BC.w, main='QQplot of BC.w')
 qqline(BC.w)
 ```
+
 One transformed variable at a time
+
 ```{r}
 shapiro.test(BC.x)
 shapiro.test(BC.y)
 shapiro.test(BC.z)
 shapiro.test(BC.w)
 ```
+
 All together
+
 ```{r}
 mcshapiro.test(cbind(BC.x,
                      BC.y,
                      BC.z,
                      BC.w))
 ```
+
 We have Gaussianity.
 
 Note: the higher the dimensionality, the more difficult to recover the Gaussianity.
@@ -395,21 +417,29 @@ mcshapiro.test(x)
 alpha <- 0.01
 mu0   <- c(1,0)
 ```
+
 **$T_0^2$ Statistics**
+
 ```{r}
 x.T2 <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0)
 ```
+
 **Radius of the ellipsoid** (case when `n` is small and we need Gaussianity)
+
 ```{r}
 cfr.fisher <- (n-1)*p/(n-p) * qf(1-alpha,p,n-p)
 ```
+
 Test:
+
 ```{r}
 x.T2 < cfr.fisher
 ```
+
 No statistical evidence to reject $H_0$ at level `alpha`.
 
 **Compute the p-value**
+
 ```{r}
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
@@ -460,6 +490,7 @@ The confidence region of level `1-alpha` contains all the `mu0` that we would ac
 Note: by definition, the confidence region of level `1-alpha` produces ellipsoidal regions that contain the true mean `100(1-alpha)%` of the times. If $H_0$ is true (i.e., `mu0` is  the true mean), those ellipsoidal regions will contain `mu0` `100(1-alpha)%` of the times
 
 ## Asymptotic test on the mean (`n` large)
+
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1,0)` (same as before).
 
 Note: *we don't need to verify the Gaussianity assumption!*
@@ -470,7 +501,9 @@ Warning: we are going to use an asymptotic test, but we only have `n=30`!
 alpha <- 0.01
 mu0   <- c(1,0)
 ```
+
 **$T_0^2$ Statistics**
+
 ```{r}
 x.T2A <- n * (x.mean-mu0) %*%  x.invcov  %*% (x.mean-mu0)
 cfr.chisq <- qchisq(1-alpha,p)
@@ -480,6 +513,7 @@ x.T2A < cfr.chisq
 No statistical evidence to reject $H_0$ at level `alpha`.
 
 **Compute the p-value**
+
 ```{r}
 PA <- 1-pchisq(x.T2A, p)
 PA
@@ -503,9 +537,10 @@ ellipse(x.mean, x.cov/n, sqrt(cfr.chisq),
 points(x.mean[1], x.mean[2], pch = 4, cex = 1.5, lwd = 2, col ='orange')
 legend('topleft', c('Exact', 'Asymptotic'),
        col=c('red','orange'),lty=c(1),lwd=2)
-
 ```
+
 **We change the null Hypothesis**
+
 ```{r}
 mu0 <- c(1.5,-0.5)
 mu0
@@ -519,11 +554,14 @@ Test of level `1%`
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1.5,-0.5)`
 
 **$T_0^2$ Statistics**
+
 ```{r}
 x.T2false <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
 x.T2false < cfr.fisher
 ```
+
 **Compute the p-value**
+
 ```{r}
 P <- 1-pf(x.T2false*(n-p)/((n-1)*p), p, n-p)
 P
@@ -542,6 +580,7 @@ points(x.mean[1], x.mean[2],
 For instance, we could provide **confidence intervals** along interesting directions (if they don't contain the mean under $H_0$, it means that we reject the associated univariate test along that direction)
 
 ### Simultaneous T2 confidence intervals
+
 Let's try with simultaneous T2 confidence intervals on the coordinate directions.
 
 Recall: these are projections of the ellipsoidal confidence region.
@@ -569,6 +608,7 @@ points(x.mean[1], x.mean[2], pch = 16, col = 'red', cex=1.5)
 ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, center.pch = 16)
 rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
 ```
+
 ### Simultaneous Bonferroni confidence intervals
 
 Let's try with **Bonferroni confidence intervals**
@@ -640,12 +680,16 @@ p <- dim(stiff)[2]
 ## Test for the mean at level 5%
 
 ### Formulate the test
+
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1850, 1750, 1500, 1700)`
+
 ```{r}
 mu0   <- c(1850, 1750, 1500, 1700)
 alpha <- 0.05
 ```
+
 ### Compute the test statistics
+
 ```{r}
 x.mean   <- colMeans(stiff)
 x.cov    <- cov(stiff)
@@ -655,6 +699,7 @@ x.T2       <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0)
 ```
 
 ### Verify if the test statistics belongs to the rejection region
+
 ```{r}
 cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
 x.T2 < cfr.fisher
@@ -663,6 +708,7 @@ x.T2 < cfr.fisher
 We accept $H_0$ at 5%.
 
 ### Compute the p-value
+
 ```{r}
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
@@ -699,6 +745,7 @@ We plot the projections of the ellipsoid in some directions of interest (e.g. th
 We plot the simultaneous T2 confidence intervals in each direction of interest (with global coverage `alpha`).
 
 ### Simultaneous T2 intervals on the components of the mean with global level 95%
+
 ```{r}
 T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
             center = x.mean, 
@@ -722,6 +769,7 @@ Is `mu0` inside the rectangular region?
 Yes, it is, because it is inside all the T2-intervals.
 
 ### Bonferroni intervals on the components of the mean with global level 95%
+
 ```{r}
 k <- p
 cfr.t <- qt(1 - alpha/(k*2), n-1)
