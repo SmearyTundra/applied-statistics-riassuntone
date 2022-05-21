@@ -2,9 +2,15 @@
 
 # LAB 9: 
 
-
-```{r }
+```{r include=FALSE}
+path_images = paste(here::here("images"),"/", sep="")
+knitr::opts_chunk$set(fig.path = path_images,
+                      echo = TRUE,
+					  dev = "png",
+					  dpi = 300,
+					  cache=TRUE)
 ```
+
 
 LAB 9 (29/04/2022) 
 --------------------
@@ -19,7 +25,7 @@ library(mvtnorm)
 library(rgl)
 library(car)
 
-#load("../Lab 5/mcshapiro.test.RData")
+load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 ```
 
 _______________________________________________________________________________
@@ -29,8 +35,8 @@ Example 1: iris dataset
 let's forget the labels (we perform a cluster analysis, not a discriminant one)
 
 ```{r }
-species.name <- iris[,5]
-iris4        <- iris[,1:4]
+species.name <- iris[, 5]
+iris4 <- iris[, 1:4]
 
 pairs(iris4)
 
@@ -42,37 +48,37 @@ we choose the Euclidean metric (and then we look at other metrics)
 
 ```{r }
 help(dist)
-iris.e <- dist(iris4, method='euclidean')
+iris.e <- dist(iris4, method = "euclidean")
 
-image(1:150,1:150,as.matrix(iris.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j')
+image(1:150, 1:150, as.matrix(iris.e), main = "metrics: Euclidean", asp = 1, xlab = "i", ylab = "j")
 ```
 
 with other metrics:
 
 ```{r }
-iris.m <- dist(iris4, method='manhattan')
-iris.c <- dist(iris4, method='canberra')
+iris.m <- dist(iris4, method = "manhattan")
+iris.c <- dist(iris4, method = "canberra")
 
-par(mfrow=c(1,3))
-image(1:150,1:150,as.matrix(iris.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.c), main='metrics: Canberra', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.m), main='metrics: Manhattan', asp=1, xlab='i', ylab='j' )
+par(mfrow = c(1, 3))
+image(1:150, 1:150, as.matrix(iris.e), main = "metrics: Euclidean", asp = 1, xlab = "i", ylab = "j")
+image(1:150, 1:150, as.matrix(iris.c), main = "metrics: Canberra", asp = 1, xlab = "i", ylab = "j")
+image(1:150, 1:150, as.matrix(iris.m), main = "metrics: Manhattan", asp = 1, xlab = "i", ylab = "j")
 ```
 
 actually, the data are never ordered according to (unknown) labels
 
 ```{r }
 misc <- sample(150)
-iris4 <- iris4[misc,]
+iris4 <- iris4[misc, ]
 
-iris.e <- dist(iris4, method='euclidean')
-iris.m <- dist(iris4, method='manhattan')
-iris.c <- dist(iris4, method='canberra')
+iris.e <- dist(iris4, method = "euclidean")
+iris.m <- dist(iris4, method = "manhattan")
+iris.c <- dist(iris4, method = "canberra")
 
-par(mfrow=c(1,3))
-image(1:150,1:150,as.matrix(iris.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.c), main='metrics: Canberra', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.m), main='metrics: Manhattan', asp=1, xlab='i', ylab='j' )
+par(mfrow = c(1, 3))
+image(1:150, 1:150, as.matrix(iris.e), main = "metrics: Euclidean", asp = 1, xlab = "i", ylab = "j")
+image(1:150, 1:150, as.matrix(iris.c), main = "metrics: Canberra", asp = 1, xlab = "i", ylab = "j")
+image(1:150, 1:150, as.matrix(iris.m), main = "metrics: Manhattan", asp = 1, xlab = "i", ylab = "j")
 
 graphics.off()
 ```
@@ -84,9 +90,9 @@ Command hclust()
 ```{r }
 help(hclust)
 
-iris.es <- hclust(iris.e, method='single')
-iris.ea <- hclust(iris.e, method='average')
-iris.ec <- hclust(iris.e, method='complete')
+iris.es <- hclust(iris.e, method = "single")
+iris.ea <- hclust(iris.e, method = "average")
+iris.ec <- hclust(iris.e, method = "complete")
 ```
 
 if we want more detailed information on euclidean-complete
@@ -94,18 +100,18 @@ clustering:
 
 ```{r }
 names(iris.ec)
-iris.ec$merge  # order of aggregation of statistical units / clusters
+iris.ec$merge # order of aggregation of statistical units / clusters
 iris.ec$height # distance at which we have aggregations
-iris.ec$order  # ordering that allows to avoid intersections in the dendrogram
+iris.ec$order # ordering that allows to avoid intersections in the dendrogram
 ```
 
 plot of the dendrograms
 
 ```{r }
-par(mfrow=c(1,3))
-plot(iris.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(iris.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(iris.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+par(mfrow = c(1, 3))
+plot(iris.es, main = "euclidean-single", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+plot(iris.ec, main = "euclidean-complete", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+plot(iris.ea, main = "euclidean-average", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
 
 dev.off()
 ```
@@ -113,13 +119,13 @@ dev.off()
 plot dendrograms (2 clusters)
 
 ```{r }
-par(mfrow=c(1,3))
-plot(iris.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.es, k=2)
-plot(iris.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ec, k=2)
-plot(iris.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ea, k=2)
+par(mfrow = c(1, 3))
+plot(iris.es, main = "euclidean-single", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.es, k = 2)
+plot(iris.ec, main = "euclidean-complete", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.ec, k = 2)
+plot(iris.ea, main = "euclidean-average", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.ea, k = 2)
 
 dev.off()
 ```
@@ -127,16 +133,16 @@ dev.off()
 plot dendrograms (3 clusters)
 
 ```{r }
-par(mfrow=c(1,3))
-plot(iris.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.es, k=2)
-rect.hclust(iris.es, k=3)
-plot(iris.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ec, k=2)
-rect.hclust(iris.ec, k=3)
-plot(iris.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ea, k=2)
-rect.hclust(iris.ea, k=3)
+par(mfrow = c(1, 3))
+plot(iris.es, main = "euclidean-single", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.es, k = 2)
+rect.hclust(iris.es, k = 3)
+plot(iris.ec, main = "euclidean-complete", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.ec, k = 2)
+rect.hclust(iris.ec, k = 3)
+plot(iris.ea, main = "euclidean-average", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+rect.hclust(iris.ea, k = 2)
+rect.hclust(iris.ea, k = 3)
 
 dev.off()
 ```
@@ -151,11 +157,11 @@ help(cutree)
 Fix k=2 clusters:
 
 ```{r }
-cluster.ec <- cutree(iris.ec, k=2) # euclidean-complete:
+cluster.ec <- cutree(iris.ec, k = 2) # euclidean-complete:
 cluster.ec
 
-cluster.es <- cutree(iris.es, k=2) # euclidean-single
-cluster.ea <- cutree(iris.ea, k=2) # euclidean-average
+cluster.es <- cutree(iris.es, k = 2) # euclidean-single
+cluster.ea <- cutree(iris.ea, k = 2) # euclidean-average
 ```
 
 interpret the clusters
@@ -165,9 +171,9 @@ table(label.true = species.name[misc], label.cluster = cluster.es)
 table(label.true = species.name[misc], label.cluster = cluster.ec)
 table(label.true = species.name[misc], label.cluster = cluster.ea)
 
-plot(iris4, col=ifelse(cluster.es==1,'red','blue'), pch=19)
-plot(iris4, col=ifelse(cluster.ec==1,'red','blue'), pch=19)
-plot(iris4, col=ifelse(cluster.ea==1,'red','blue'), pch=19)
+plot(iris4, col = ifelse(cluster.es == 1, "red", "blue"), pch = 19)
+plot(iris4, col = ifelse(cluster.ec == 1, "red", "blue"), pch = 19)
+plot(iris4, col = ifelse(cluster.ea == 1, "red", "blue"), pch = 19)
 
 graphics.off()
 ```
@@ -185,11 +191,11 @@ coph.ea <- cophenetic(iris.ea)
 compare with dissimilarity matrix (Euclidean distance)
 
 ```{r }
-layout(rbind(c(0,1,0),c(2,3,4)))
-image(as.matrix(iris.e), main='Euclidean', asp=1 )
-image(as.matrix(coph.es), main='Single', asp=1 )
-image(as.matrix(coph.ec), main='Complete', asp=1 )
-image(as.matrix(coph.ea), main='Average', asp=1 )
+layout(rbind(c(0, 1, 0), c(2, 3, 4)))
+image(as.matrix(iris.e), main = "Euclidean", asp = 1)
+image(as.matrix(coph.es), main = "Single", asp = 1)
+image(as.matrix(coph.ec), main = "Complete", asp = 1)
+image(as.matrix(coph.ea), main = "Average", asp = 1)
 
 dev.off()
 ```
@@ -201,7 +207,7 @@ es <- cor(iris.e, coph.es)
 ec <- cor(iris.e, coph.ec)
 ea <- cor(iris.e, coph.ea)
 
-c("Eucl-Single"=es,"Eucl-Compl."=ec,"Eucl-Ave."=ea)
+c("Eucl-Single" = es, "Eucl-Compl." = ec, "Eucl-Ave." = ea)
 ```
 
 Exercise: repeat the analysis with other metrics
@@ -218,37 +224,39 @@ set.seed(123)
 x : vector of NON clustered data
 
 ```{r }
-x <- 0:124/124 + rnorm(125, sd=0.01)
+x <- 0:124 / 124 + rnorm(125, sd = 0.01)
 ```
 
 y : vector of clustered data (5 clusters)
 
 ```{r }
-y <- c(rnorm(25, mean=0, sd=0.01), rnorm(25, mean=0.25, sd=0.01),
-       rnorm(25, mean=0.5, sd=0.01), rnorm(25, mean=0.75, sd=0.01),
-       rnorm(25, mean=1, sd=0.01))
+y <- c(
+  rnorm(25, mean = 0, sd = 0.01), rnorm(25, mean = 0.25, sd = 0.01),
+  rnorm(25, mean = 0.5, sd = 0.01), rnorm(25, mean = 0.75, sd = 0.01),
+  rnorm(25, mean = 1, sd = 0.01)
+)
 
 x <- sample(x)
 y <- sample(y)
 
-par(mfrow=c(1,2))
-plot(rep(0,125),x, main='data: no clust',xlab='')
-plot(rep(0,125),y, main='data: clust',xlab='')
+par(mfrow = c(1, 2))
+plot(rep(0, 125), x, main = "data: no clust", xlab = "")
+plot(rep(0, 125), y, main = "data: clust", xlab = "")
 
 dx <- dist(x)
 dy <- dist(y)
-hcx<- hclust(dx, method='single')
-hcy<- hclust(dy, method='single')
+hcx <- hclust(dx, method = "single")
+hcy <- hclust(dy, method = "single")
 
-par(mfrow=c(1,2))
-plot(hcx, labels=F, cex=0.5, hang=-0.1, xlab='', sub='x')
-plot(hcy, labels=F, cex=0.5, hang=-0.1, xlab='', sub='y')
+par(mfrow = c(1, 2))
+plot(hcx, labels = F, cex = 0.5, hang = -0.1, xlab = "", sub = "x")
+plot(hcy, labels = F, cex = 0.5, hang = -0.1, xlab = "", sub = "y")
 
-par(mfrow=c(2,2))
-image(as.matrix(dx), asp=1, main='not ordered x' )
-image(as.matrix(dy), asp=1, main='not ordered y' )
-image(as.matrix(dx)[hcx$order,hcx$order], asp=1, main='reordered x' )
-image(as.matrix(dy)[hcy$order,hcy$order], asp=1, main='reordered y' )
+par(mfrow = c(2, 2))
+image(as.matrix(dx), asp = 1, main = "not ordered x")
+image(as.matrix(dy), asp = 1, main = "not ordered y")
+image(as.matrix(dx)[hcx$order, hcx$order], asp = 1, main = "reordered x")
+image(as.matrix(dy)[hcy$order, hcy$order], asp = 1, main = "reordered y")
 
 graphics.off()
 ```
@@ -260,9 +268,9 @@ Bivariate case (example of chaining effect)
 p <- 2
 n <- 100
 
-mu1 <- c(0,1)
-mu2 <- c(5,1.2)
-sig <- diag(rep(1,p))
+mu1 <- c(0, 1)
+mu2 <- c(5, 1.2)
+sig <- diag(rep(1, p))
 
 set.seed(1)
 X1 <- rmvnorm(n, mu1, sig)
@@ -274,13 +282,13 @@ X <- rbind(X1, X2)
 If we knew the labels:
 
 ```{r }
-plot(X, xlab='Var 1', ylab='Var 2', col=rep(c('red','blue'),each=100), asp=1)
+plot(X, xlab = "Var 1", ylab = "Var 2", col = rep(c("red", "blue"), each = 100), asp = 1)
 ```
 
 How we actually see the data:
 
 ```{r }
-plot(X, xlab='Var 1', ylab='Var 2', asp=1)
+plot(X, xlab = "Var 1", ylab = "Var 2", asp = 1)
 
 dev.off()
 ```
@@ -289,16 +297,16 @@ let's compare the clustering results with Euclidean distance and three
 types of linkage
 
 ```{r }
-x.d <- dist(X, method = 'euclidean')
+x.d <- dist(X, method = "euclidean")
 
-x.es <- hclust(x.d, method='single')
-x.ea <- hclust(x.d, method='average')
-x.ec <- hclust(x.d, method='complete')
+x.es <- hclust(x.d, method = "single")
+x.ea <- hclust(x.d, method = "average")
+x.ec <- hclust(x.d, method = "complete")
 
-par(mfrow=c(1,3))
-plot(x.es, main = 'Single linkage'  , hang=-0.1, xlab='', labels=F, sub='')
-plot(x.ea, main = 'Average linkage' , hang=-0.1, xlab='', labels=F, sub='')
-plot(x.ec, main = 'Complete linkage', hang=-0.1, xlab='', labels=F, sub='')
+par(mfrow = c(1, 3))
+plot(x.es, main = "Single linkage", hang = -0.1, xlab = "", labels = F, sub = "")
+plot(x.ea, main = "Average linkage", hang = -0.1, xlab = "", labels = F, sub = "")
+plot(x.ec, main = "Complete linkage", hang = -0.1, xlab = "", labels = F, sub = "")
 ```
 
 let's cut the tree as to get 2 clusters
@@ -308,11 +316,11 @@ cluster.es <- cutree(x.es, k = 2)
 cluster.ea <- cutree(x.ea, k = 2)
 cluster.ec <- cutree(x.ec, k = 2)
 
-par(mfrow=c(1,3))
+par(mfrow = c(1, 3))
 
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Single linkage', col=ifelse(cluster.es==1,'red','blue'), pch=16, asp=1)
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Average linkage', col=ifelse(cluster.ea==1,'red','blue'), pch=16, asp=1)
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Complete linkage', col=ifelse(cluster.ec==1,'red','blue'), pch=16, asp=1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Single linkage", col = ifelse(cluster.es == 1, "red", "blue"), pch = 16, asp = 1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Average linkage", col = ifelse(cluster.ea == 1, "red", "blue"), pch = 16, asp = 1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Complete linkage", col = ifelse(cluster.ec == 1, "red", "blue"), pch = 16, asp = 1)
 
 graphics.off()
 ```
@@ -324,12 +332,12 @@ Bivariate case (example of ellipsoidal clusters)
 p <- 2
 n <- 100
 
-mu1 <- c(0,1)
-mu2 <- c(6.5,1)
+mu1 <- c(0, 1)
+mu2 <- c(6.5, 1)
 
-e1 <- c(1,1)
-e2 <- c(-1,1)
-sig <- 5*cbind(e1)%*%rbind(e1)+.1*cbind(e2)%*%rbind(e2)
+e1 <- c(1, 1)
+e2 <- c(-1, 1)
+sig <- 5 * cbind(e1) %*% rbind(e1) + .1 * cbind(e2) %*% rbind(e2)
 
 set.seed(2)
 X1 <- rmvnorm(n, mu1, sig)
@@ -341,13 +349,13 @@ X <- rbind(X1, X2)
 If we knew the labels:
 
 ```{r }
-plot(X, xlab='Var 1', ylab='Var 2', asp=1, col=rep(c('red','blue'),each=100))
+plot(X, xlab = "Var 1", ylab = "Var 2", asp = 1, col = rep(c("red", "blue"), each = 100))
 ```
 
 How we actually see the data:
 
 ```{r }
-plot(X, xlab='Var 1', ylab='Var 2', asp=1)
+plot(X, xlab = "Var 1", ylab = "Var 2", asp = 1)
 
 dev.off()
 ```
@@ -355,40 +363,40 @@ dev.off()
 compare results with different linkage, when Euclidean distances is used
 
 ```{r }
-x.d <- dist(X, method = 'euclidean')
+x.d <- dist(X, method = "euclidean")
 
-x.es <- hclust(x.d, method='single')
-x.ea <- hclust(x.d, method='average')
-x.ec <- hclust(x.d, method='complete')
+x.es <- hclust(x.d, method = "single")
+x.ea <- hclust(x.d, method = "average")
+x.ec <- hclust(x.d, method = "complete")
 
-par(mfrow=c(1,3))
+par(mfrow = c(1, 3))
 
-plot(x.es, main = 'Single linkage', ylab='Euclidean distance', hang=-0.1, xlab='', labels=F, sub='')
-plot(x.ea, main = 'Average linkage', hang=-0.1, xlab='', labels=F, sub='')
-plot(x.ec, main = 'Complete linkage', hang=-0.1, xlab='', labels=F, sub='')
+plot(x.es, main = "Single linkage", ylab = "Euclidean distance", hang = -0.1, xlab = "", labels = F, sub = "")
+plot(x.ea, main = "Average linkage", hang = -0.1, xlab = "", labels = F, sub = "")
+plot(x.ec, main = "Complete linkage", hang = -0.1, xlab = "", labels = F, sub = "")
 ```
 
 let's cut the tree to get 2 clusters
 
 ```{r }
-par(mfrow=c(1,3))
+par(mfrow = c(1, 3))
 
-plot(x.es, main = 'Single linkage', ylab='Euclidean distance', hang=-0.1, xlab='', labels=F, sub='')
-rect.hclust(x.es, k=2)
-plot(x.ea, main = 'Average linkage', hang=-0.1, xlab='', labels=F, sub='')
-rect.hclust(x.ea, k=2)
-plot(x.ec, main = 'Complete linkage', hang=-0.1, xlab='', labels=F, sub='')
-rect.hclust(x.ec, k=2)
+plot(x.es, main = "Single linkage", ylab = "Euclidean distance", hang = -0.1, xlab = "", labels = F, sub = "")
+rect.hclust(x.es, k = 2)
+plot(x.ea, main = "Average linkage", hang = -0.1, xlab = "", labels = F, sub = "")
+rect.hclust(x.ea, k = 2)
+plot(x.ec, main = "Complete linkage", hang = -0.1, xlab = "", labels = F, sub = "")
+rect.hclust(x.ec, k = 2)
 
 cluster.es <- cutree(x.es, k = 2)
 cluster.ea <- cutree(x.ea, k = 2)
 cluster.ec <- cutree(x.ec, k = 2)
 
-par(mfrow=c(1,3))
+par(mfrow = c(1, 3))
 
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Euclidean, Single linkage', col=cluster.es+1, pch=16, asp=1)
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Euclidean, Average linkage', col=cluster.ea+1, pch=16, asp=1)
-plot(X, xlab='Var 1', ylab='Var 2', main = 'Euclidean, Complete linkage', col=cluster.ec+1, pch=16, asp=1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Single linkage", col = cluster.es + 1, pch = 16, asp = 1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Average linkage", col = cluster.ea + 1, pch = 16, asp = 1)
+plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Complete linkage", col = cluster.ec + 1, pch = 16, asp = 1)
 
 graphics.off()
 ```
@@ -406,10 +414,10 @@ help(quakes)
 head(quakes)
 dim(quakes)
 
-Q <- cbind(quakes[,1:2], depth = -quakes[,3]/100)
+Q <- cbind(quakes[, 1:2], depth = -quakes[, 3] / 100)
 head(Q)
 
-plot3d(Q, size=3, col='orange', aspect = F)
+plot3d(Q, size = 3, col = "orange", aspect = F)
 ```
 
 dissimilarity matrix (Euclidean metric)
@@ -419,34 +427,34 @@ d <- dist(Q)
 
 image(as.matrix(d))
 
-par(mfrow=c(2,2))
+par(mfrow = c(2, 2))
 
-clusts <- hclust(d, method='single')
-plot(clusts, hang=-0.1, labels=FALSE, main='single', xlab='', sub='')
+clusts <- hclust(d, method = "single")
+plot(clusts, hang = -0.1, labels = FALSE, main = "single", xlab = "", sub = "")
 ```
 
 rect.hclust(clusts, k=2)
 rect.hclust(clusts, k=3)
 
 ```{r }
-clusta <- hclust(d, method='average')
-plot(clusta, hang=-0.1, labels=FALSE, main='average', xlab='', sub='')
+clusta <- hclust(d, method = "average")
+plot(clusta, hang = -0.1, labels = FALSE, main = "average", xlab = "", sub = "")
 ```
 
 rect.hclust(clusta, k=2)
 rect.hclust(clusta, k=3)
 
 ```{r }
-clustc <- hclust(d, method='complete')
-plot(clustc, hang=-0.1, labels=FALSE, main='complete', xlab='', sub='')
+clustc <- hclust(d, method = "complete")
+plot(clustc, hang = -0.1, labels = FALSE, main = "complete", xlab = "", sub = "")
 ```
 
 rect.hclust(clustc, k=2)
 rect.hclust(clustc, k=3)
 
 ```{r }
-clustw <- hclust(d, method='ward.D2')
-plot(clustw, hang=-0.1, labels=FALSE, main='ward', xlab='', sub='')
+clustw <- hclust(d, method = "ward.D2")
+plot(clustw, hang = -0.1, labels = FALSE, main = "ward", xlab = "", sub = "")
 ```
 
 rect.hclust(clustw, k=2)
@@ -478,40 +486,40 @@ single linkage
 
 ```{r }
 clusters <- cutree(clusts, 2)
-plot3d(Q, size=3, col=clusters+1, aspect = F) 
+plot3d(Q, size = 3, col = clusters + 1, aspect = F)
 
 clusters <- cutree(clusts, 3)
-plot3d(Q, size=3, col=clusters+1, aspect = F) 
+plot3d(Q, size = 3, col = clusters + 1, aspect = F)
 ```
 
 average linkage
 
 ```{r }
 clustera <- cutree(clusta, 2)
-plot3d(Q, size=3, col=clustera+1, aspect = F) 
+plot3d(Q, size = 3, col = clustera + 1, aspect = F)
 
 clustera <- cutree(clusta, 3)
-plot3d(Q, size=3, col=clustera+1, aspect = F) 
+plot3d(Q, size = 3, col = clustera + 1, aspect = F)
 ```
 
 complete linkage
 
 ```{r }
 clusterc <- cutree(clustc, 2)
-plot3d(Q, size=3, col=clusterc+1, aspect = F) 
+plot3d(Q, size = 3, col = clusterc + 1, aspect = F)
 
 clusterc <- cutree(clustc, 3)
-plot3d(Q, size=3, col=clusterc+1, aspect = F) 
+plot3d(Q, size = 3, col = clusterc + 1, aspect = F)
 ```
 
 ward linkage
 
 ```{r }
 clusterw <- cutree(clustw, 2)
-plot3d(Q, size=3, col=clusterw+1, aspect = F) 
+plot3d(Q, size = 3, col = clusterw + 1, aspect = F)
 
 clusterw <- cutree(clustw, 3)
-plot3d(Q, size=3, col=clusterw+1, aspect = F) 
+plot3d(Q, size = 3, col = clusterw + 1, aspect = F)
 ```
 
 _______________________________________________________________________________
@@ -523,53 +531,54 @@ simulated data
 ```{r }
 n <- 100
 set.seed(1)
-x <- matrix(rnorm(n*2), ncol=2)
-x[1:(n/2),1] <- x[1:(n/2),1]+2
-x[1:(n/2),2] <- x[1:(n/2),2]-2
+x <- matrix(rnorm(n * 2), ncol = 2)
+x[1:(n / 2), 1] <- x[1:(n / 2), 1] + 2
+x[1:(n / 2), 2] <- x[1:(n / 2), 2] - 2
 
-plot(x,pch=20,cex=2,xlab='x1',ylab='x2')
+plot(x, pch = 20, cex = 2, xlab = "x1", ylab = "x2")
 ```
 
 k-means algorithm
 
 ```{r }
 k <- 2
-cluster <- sample(1:2, n, replace=TRUE)
+cluster <- sample(1:2, n, replace = TRUE)
 iter.max <- 3
 
-colplot <- c('royalblue','red')
-colpoints <- c('blue4','red4')
+colplot <- c("royalblue", "red")
+colpoints <- c("blue4", "red4")
 
-par(mfrow = c(iter.max,3))
+par(mfrow = c(iter.max, 3))
 
-for(i in 1:iter.max)
+for (i in 1:iter.max)
 {
   C <- NULL
-  for(l in 1:k)
-    C <- rbind(C, colMeans(x[cluster == l,]))
-  
-  plot(x, col = colplot[cluster],pch=19)
+  for (l in 1:k) {
+    C <- rbind(C, colMeans(x[cluster == l, ]))
+  }
+
+  plot(x, col = colplot[cluster], pch = 19)
   line <- readline()
-  
+
   points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
   line <- readline()
-  
-  plot(x, col = 'grey',pch=19)
+
+  plot(x, col = "grey", pch = 19)
   points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
   line <- readline()
-  
+
   QC <- rbind(C, x)
-  Dist <- as.matrix(dist(QC, method = 'euclidean'))[(k+1):(k+n),1:k]
-  for(j in 1:n)
-    cluster[j] <- which.min(Dist[j,])
-  
-  plot(x, col = colplot[cluster],pch=19)
+  Dist <- as.matrix(dist(QC, method = "euclidean"))[(k + 1):(k + n), 1:k]
+  for (j in 1:n) {
+    cluster[j] <- which.min(Dist[j, ])
+  }
+
+  plot(x, col = colplot[cluster], pch = 19)
   points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
   line <- readline()
-  
 }
 
-graphics.off() 
+graphics.off()
 ```
 
 
@@ -579,23 +588,23 @@ in automatic, command kmeans()
 ```{r }
 help(kmeans)
 
-result.k <- kmeans(Q, centers=2) # Centers: fixed number of clusters
+result.k <- kmeans(Q, centers = 2) # Centers: fixed number of clusters
 
 names(result.k)
 
-result.k$cluster      # labels of clusters
-result.k$centers      # centers of the clusters
-result.k$totss        # tot. sum of squares
-result.k$withinss     # sum of squares within clusters
+result.k$cluster # labels of clusters
+result.k$centers # centers of the clusters
+result.k$totss # tot. sum of squares
+result.k$withinss # sum of squares within clusters
 result.k$tot.withinss # sum(sum of squares within cluster)
-result.k$betweenss    # sum of squares between clusters
-result.k$size         # dimension of the clusters
+result.k$betweenss # sum of squares between clusters
+result.k$size # dimension of the clusters
 
-plot(Q, col = result.k$cluster+1)
+plot(Q, col = result.k$cluster + 1)
 
 open3d()
-plot3d(Q, size=3, col=result.k$cluster+1, aspect = F) 
-points3d(result.k$centers,size=10)
+plot3d(Q, size = 3, col = result.k$cluster + 1, aspect = F)
+points3d(result.k$centers, size = 10)
 ```
 
 How to choose k:
@@ -609,16 +618,14 @@ method 1)
 ```{r }
 b <- NULL
 w <- NULL
-for(k in 1:10){
-  
+for (k in 1:10) {
   result.k <- kmeans(Q, k)
   w <- c(w, sum(result.k$wit))
   b <- c(b, result.k$bet)
-  
 }
 
-matplot(1:10, w/(w+b), pch='', xlab='clusters', ylab='within/tot', main='Choice of k', ylim=c(0,1))
-lines(1:10, w/(w+b), type='b', lwd=2)
+matplot(1:10, w / (w + b), pch = "", xlab = "clusters", ylab = "within/tot", main = "Choice of k", ylim = c(0, 1))
+lines(1:10, w / (w + b), type = "b", lwd = 2)
 ```
 
 this method seems to suggest k = 2 or 3
@@ -627,10 +634,10 @@ let's try also k=3:
 ```{r }
 result.k <- kmeans(Q, 3)
 
-plot(Q, col = result.k$cluster+1)
+plot(Q, col = result.k$cluster + 1)
 
 open3d()
-plot3d(Q, size=3, col=result.k$cluster+1, aspect = F) 
+plot3d(Q, size = 3, col = result.k$cluster + 1, aspect = F)
 points3d(result.k$centers, size = 10)
 ```
 
@@ -654,7 +661,7 @@ c) using five Bonferroni intervals of global confidence 90%, comment the
    results of the test at point (b).
 
 ```{r }
-vowels <- read.table('veritatis.txt', header=T)
+vowels <- read.table(here::here("markdowns","lab_9_data","veritatis.txt"), header = T)
 head(vowels)
 dim(vowels)
 ```
@@ -664,27 +671,25 @@ question a)
 ```{r }
 plot(vowels)
 
-HC <- hclust(dist(vowels, method='manhattan'), method = 'average')
+HC <- hclust(dist(vowels, method = "manhattan"), method = "average")
 
-plot(HC, hang=-0.1, sub='', labels=F, xlab='')
-```
+plot(HC, hang = -0.1, sub = "", labels = F, xlab = "")
 
-we cut the dendrogram at k=2 clusters
+# we cut the dendrogram at k=2 clusters
 
-```{r }
-rect.hclust(HC, k=2)
+rect.hclust(HC, k = 2)
 
-pag <- cutree(HC, k=2)
+pag <- cutree(HC, k = 2)
 table(pag)
-which(pag==2)
+which(pag == 2)
 
-plot(vowels , col=pag+1, asp=1, pch=16, lwd=2)
+plot(vowels, col = pag + 1, asp = 1, pch = 16, lwd = 2)
 ```
 
 question b)
 
 ```{r }
-p  <- 5
+p <- 5
 n1 <- table(pag)[1]
 n2 <- table(pag)[2]
 ```
@@ -692,27 +697,27 @@ n2 <- table(pag)[2]
 Verify gaussianity
 
 ```{r }
-mcshapiro.test(vowels[pag=='1',])
-mcshapiro.test(vowels[pag=='2',])
+mcshapiro.test(vowels[pag == "1", ])
+mcshapiro.test(vowels[pag == "2", ])
 ```
 
 Test for independent Gaussian populations
 
 ```{r }
-t1.mean <- sapply(vowels[pag=='1',],mean)
-t2.mean <- sapply(vowels[pag=='2',],mean)
-t1.cov  <-  cov(vowels[pag=='1',])
-t2.cov  <-  cov(vowels[pag=='2',])
-Sp      <- ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+t1.mean <- sapply(vowels[pag == "1", ], mean)
+t2.mean <- sapply(vowels[pag == "2", ], mean)
+t1.cov <- cov(vowels[pag == "1", ])
+t2.cov <- cov(vowels[pag == "2", ])
+Sp <- ((n1 - 1) * t1.cov + (n2 - 1) * t2.cov) / (n1 + n2 - 2)
 ```
 
 Test: H0: mu.1-mu.2==0 vs H1: mu.1-mu.2!=0
 
 ```{r }
-delta.0 <- c(0,0,0,0,0)
-Spinv   <- solve(Sp)
-T2 <- n1*n2/(n1+n2) * (t1.mean-t2.mean-delta.0) %*% Spinv %*% (t1.mean-t2.mean-delta.0)
-P <- 1 - pf(T2/(p*(n1+n2-2)/(n1+n2-1-p)), p, n1+n2-1-p)
+delta.0 <- c(0, 0, 0, 0, 0)
+Spinv <- solve(Sp)
+T2 <- n1 * n2 / (n1 + n2) * (t1.mean - t2.mean - delta.0) %*% Spinv %*% (t1.mean - t2.mean - delta.0)
+P <- 1 - pf(T2 / (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)), p, n1 + n2 - 1 - p)
 P
 ```
 
@@ -720,9 +725,11 @@ question c)
 
 ```{r }
 alpha <- 0.1
-IC <- cbind(t2.mean-t1.mean - sqrt(diag(Sp)*(1/n1+1/n2)) * qt(1 - alpha/(p*2), n1+n2-2),
-            t2.mean-t1.mean,
-            t2.mean-t1.mean + sqrt(diag(Sp)*(1/n1+1/n2)) * qt(1 - alpha/(p*2), n1+n2-2))
+IC <- cbind(
+  t2.mean - t1.mean - sqrt(diag(Sp) * (1 / n1 + 1 / n2)) * qt(1 - alpha / (p * 2), n1 + n2 - 2),
+  t2.mean - t1.mean,
+  t2.mean - t1.mean + sqrt(diag(Sp) * (1 / n1 + 1 / n2)) * qt(1 - alpha / (p * 2), n1 + n2 - 2)
+)
 IC
 
 graphics.off()
@@ -750,10 +757,10 @@ c) introducing the appropriate hypotheses, identifying the points of impact
    points of impact on the ground.
 
 ```{r }
-satellite <- read.table('satellite.txt', header=T)
+satellite <- read.table(here::here("markdowns","lab_9_data","satellite.txt"), header = T)
 head(satellite)
 
-plot(satellite, asp = 1, pch=16)
+plot(satellite, asp = 1, pch = 16)
 
 dev.off()
 ```
@@ -763,20 +770,17 @@ question a)
 ```{r }
 D.s <- dist(satellite)
 
-HCa <- hclust(D.s, method = 'average')
+HCa <- hclust(D.s, method = "average")
 
-plot(HCa, hang=-0.1, sub='', xlab='', labels=F)
-```
+plot(HCa, hang = -0.1, sub = "", xlab = "", labels = F)
 
-we know that there are 2 clusters, so we cut the dendrograms 
-accordingly:
+# we know that there are 2 clusters, so we cut the dendrograms accordingly:
 
-```{r }
-rect.hclust(HCa, k=2)
+rect.hclust(HCa, k = 2)
 
-sata <- cutree(HCa, k=2)
+sata <- cutree(HCa, k = 2)
 
-plot(satellite , col=sata+1, asp=1, pch=16, main='Average')
+plot(satellite, col = sata + 1, asp = 1, pch = 16, main = "Average")
 
 dev.off()
 ```
@@ -795,7 +799,7 @@ coph.sat
 question c)
 
 ```{r }
-p  <- 2
+p <- 2
 n1 <- table(sata)[1]
 n2 <- table(sata)[2]
 ```
@@ -807,13 +811,13 @@ Assumptions:
 Verificy Gaussian assumption
 
 ```{r }
-mcshapiro.test(satellite[sata=='1',])$pvalue
-mcshapiro.test(satellite[sata=='2',])$pvalue
+mcshapiro.test(satellite[sata == "1", ])$pvalue
+mcshapiro.test(satellite[sata == "2", ])$pvalue
 
-t1.mean <- sapply(satellite[sata=='1',],mean)
-t2.mean <- sapply(satellite[sata=='2',],mean)
-t1.cov  <-  cov(satellite[sata=='1',])
-t2.cov  <-  cov(satellite[sata=='2',])
+t1.mean <- sapply(satellite[sata == "1", ], mean)
+t2.mean <- sapply(satellite[sata == "2", ], mean)
+t1.cov <- cov(satellite[sata == "1", ])
+t2.cov <- cov(satellite[sata == "2", ])
 ```
 
 Homogeneity of covariances
@@ -822,14 +826,14 @@ Homogeneity of covariances
 t1.cov
 t2.cov
 
-Sp      <- ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+Sp <- ((n1 - 1) * t1.cov + (n2 - 1) * t2.cov) / (n1 + n2 - 2)
 ```
 
 Elliptic confidence region at 99%
 
 ```{r }
 alpha <- 0.01
-cfr.fisher <- (p*(n1+n2-2)/(n1+n2-1-p))*qf(1-alpha, p, n1+n2-1-p)
+cfr.fisher <- (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)) * qf(1 - alpha, p, n1 + n2 - 1 - p)
 ```
 
 Characterize the ellipse:
@@ -848,19 +852,21 @@ r <- sqrt(cfr.fisher)
 Length of the semi-axes
 
 ```{r }
-r*sqrt(eigen(Sp)$values*(1/n1+1/n2))
+r * sqrt(eigen(Sp)$values * (1 / n1 + 1 / n2))
 
-par(mfrow=c(1,2))
-plot(satellite , col=sata+1, asp=1, pch=16, main='Original data and groups')
-plot(satellite, xlim=c(-23,-15), ylim=c(-25,-17), pch='', asp=1, 
-     main='Elliptic region for the mean diff. (red - green)')
-```
+par(mfrow = c(1, 2))
+plot(satellite, col = sata + 1, asp = 1, pch = 16, main = "Original data and groups")
+plot(satellite,
+  xlim = c(-23, -15), ylim = c(-25, -17), pch = "", asp = 1,
+  main = "Elliptic region for the mean diff. (red - green)"
+)
 
-confidence region and sample mean in blue
+# confidence region and sample mean in blue
 
-```{r }
-ellipse(center=t1.mean-t2.mean, shape=Sp*(1/n1+1/n2), radius=sqrt(cfr.fisher), 
-        lwd=2, col='blue')
+ellipse(
+  center = t1.mean - t2.mean, shape = Sp * (1 / n1 + 1 / n2), radius = sqrt(cfr.fisher),
+  lwd = 2, col = "blue"
+)
 
 graphics.off()
 ```
@@ -884,18 +890,18 @@ c) Identify the gemstones with the smaller group. Having introduced
    of the principal axes of the ellipse).
 
 ```{r }
-stones <- read.table('preziosi.txt',header=TRUE)
+stones <- read.table(here::here("markdowns","lab_9_data","preziosi.txt"), header = TRUE)
 plot(stones)
 ```
 
 question a)
 
 ```{r }
-p.e <- dist(stones, method='euclidean')
-p.ew <- hclust(p.e, method='ward.D2')
+p.e <- dist(stones, method = "euclidean")
+p.ew <- hclust(p.e, method = "ward.D2")
 
-plot(p.ew, hang=-0.1, sub='', xlab='', labels=F)
-cl.ew <- cutree(p.ew, k=2) # euclidea-ward
+plot(p.ew, hang = -0.1, sub = "", xlab = "", labels = F)
+cl.ew <- cutree(p.ew, k = 2) # euclidea-ward
 ```
 
 question b)
@@ -911,12 +917,12 @@ ew
 question c)
 
 ```{r }
-p.pr<-stones[which(cl.ew==2),]
+p.pr <- stones[which(cl.ew == 2), ]
 n <- dim(p.pr)[1]
-p <-dim(p.pr)[2]
+p <- dim(p.pr)[2]
 
 plot(stones)
-points(p.pr, pch=19)
+points(p.pr, pch = 19)
 ```
 
 Verify gaussian assumptions
@@ -927,7 +933,7 @@ mcshapiro.test(p.pr)
 M <- sapply(p.pr, mean)
 S <- cov(p.pr)
 alpha <- 0.01
-cfr.chisq <- qchisq(1-alpha,p)
+cfr.chisq <- qchisq(1 - alpha, p)
 ```
 
 Characterize the ellipse:
@@ -952,13 +958,13 @@ r <- sqrt(cfr.chisq)
 Length of the semi-axes:
 
 ```{r }
-r*sqrt(eigen(S)$values)  
+r * sqrt(eigen(S)$values)
 
-plot(p.pr, asp = 1, col='gold', pch=19, xlim=c(-10,50))
+plot(p.pr, asp = 1, col = "gold", pch = 19, xlim = c(-10, 50))
 points(M[1], M[2], pch = 4, cex = 1.5, lwd = 2)
 
-ellipse(center=M, shape=S, radius=sqrt(cfr.chisq), col = 'black', lty = 2, center.pch = 4)
-points(stones[which(cl.ew==1),])
+ellipse(center = M, shape = S, radius = sqrt(cfr.chisq), col = "black", lty = 2, center.pch = 4)
+points(stones[which(cl.ew == 1), ])
 
 graphics.off()
 ```
@@ -985,7 +991,7 @@ by implementing and commenting on the following analyses:
 (d) verify the assumptions necessary to the implementation of the test.
 
 ```{r }
-sparrows <- read.table('Pb3.txt')
+sparrows <- read.table(here::here("markdowns","lab_9_data","Pb3.txt"))
 head(sparrows)
 dim(sparrows)
 ```
@@ -993,27 +999,27 @@ dim(sparrows)
 question (a)
 
 ```{r }
-plot(sparrows, pch=16)
+plot(sparrows, pch = 16)
 
 dev.off()
 
-gruppi <- hclust(dist(sparrows, method='manhattan'), method='single')
-plot(gruppi, hang=-0.1, sub='', xlab='', labels=F)
+gruppi <- hclust(dist(sparrows, method = "manhattan"), method = "single")
+plot(gruppi, hang = -0.1, sub = "", xlab = "", labels = F)
 ```
 
 cut in two groups
 
 ```{r }
-cluster <- cutree(gruppi, k=2)
+cluster <- cutree(gruppi, k = 2)
 
-plot(sparrows, pch=16, col = as.vector(cluster)+1)
+plot(sparrows, pch = 16, col = as.vector(cluster) + 1)
 ```
 
 question (b)
 
 ```{r }
-g1 <- sparrows[cluster==1,]
-g2 <- sparrows[cluster==2,]
+g1 <- sparrows[cluster == 1, ]
+g2 <- sparrows[cluster == 2, ]
 g1
 g2
 ```
@@ -1021,41 +1027,43 @@ g2
 Test: H0: mu.1-mu.2==0 vs H1: mu.1-mu.2!=0
 
 ```{r }
-p  <- 2
+p <- 2
 n1 <- dim(g1)[1]
 n2 <- dim(g2)[1]
 alpha <- 0.10
 
-mean1 <- sapply(g1,mean)
-mean2 <- sapply(g2,mean)
-cov1  <-  cov(g1)
-cov2  <-  cov(g2)
-Sp      <- ((n1-1)*cov1 + (n2-1)*cov2)/(n1+n2-2)
+mean1 <- sapply(g1, mean)
+mean2 <- sapply(g2, mean)
+cov1 <- cov(g1)
+cov2 <- cov(g2)
+Sp <- ((n1 - 1) * cov1 + (n2 - 1) * cov2) / (n1 + n2 - 2)
 
-delta.0 <- c(0,0)
-Spinv   <- solve(Sp)
+delta.0 <- c(0, 0)
+Spinv <- solve(Sp)
 
-T2 <- n1*n2/(n1+n2) * (mean1-mean2-delta.0) %*% Spinv %*% (mean1-mean2-delta.0)
+T2 <- n1 * n2 / (n1 + n2) * (mean1 - mean2 - delta.0) %*% Spinv %*% (mean1 - mean2 - delta.0)
 
-cfr.fisher <- (p*(n1+n2-2)/(n1+n2-1-p))*qf(1-alpha,p,n1+n2-1-p)
+cfr.fisher <- (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)) * qf(1 - alpha, p, n1 + n2 - 1 - p)
 
-pvalue <- 1 - pf(T2/(p*(n1+n2-2)/(n1+n2-1-p)), p, n1+n2-1-p)
+pvalue <- 1 - pf(T2 / (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)), p, n1 + n2 - 1 - p)
 pvalue
 ```
 
 question (c)
 
 ```{r }
-dm <- (mean1-mean2)
-A  <- rbind(c(1,0), c(0,1), c(1,1), c(1,-1))
-k  <- dim(A)[1]
+dm <- (mean1 - mean2)
+A <- rbind(c(1, 0), c(0, 1), c(1, 1), c(1, -1))
+k <- dim(A)[1]
 
-A.s2 <- diag(A%*%Sp%*%t(A))
-A.dm <- A%*%(mean1-mean2)
+A.s2 <- diag(A %*% Sp %*% t(A))
+A.dm <- A %*% (mean1 - mean2)
 
-Bonf <- cbind(inf=A.dm - qt(1-(alpha/(2*k)), n1+n2-2) * sqrt( A.s2*(1/n1+1/n2) ), 
-              center=A.dm, 
-              sup=A.dm + qt(1-(alpha/(2*k)), n1+n2-2) * sqrt( A.s2*(1/n1+1/n2) ))
+Bonf <- cbind(
+  inf = A.dm - qt(1 - (alpha / (2 * k)), n1 + n2 - 2) * sqrt(A.s2 * (1 / n1 + 1 / n2)),
+  center = A.dm,
+  sup = A.dm + qt(1 - (alpha / (2 * k)), n1 + n2 - 2) * sqrt(A.s2 * (1 / n1 + 1 / n2))
+)
 Bonf
 ```
 
@@ -1091,7 +1099,7 @@ R function for multidimensional scaling: cmdscale
 ```{r }
 help(cmdscale)
 
-location <- cmdscale(eurodist, k=2)
+location <- cmdscale(eurodist, k = 2)
 location
 ```
 
@@ -1099,15 +1107,15 @@ I have to set asp=1 (equal scales on the two axes)
 to correctly represent Euclidean distances
 
 ```{r }
-plot(location[,1], location[,2], type='n', asp=1, axes=FALSE, main="MDS of European cities",xlab='',ylab='')
-text(location[,1], location[,2], labels=colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
+plot(location[, 1], location[, 2], type = "n", asp = 1, axes = FALSE, main = "MDS of European cities", xlab = "", ylab = "")
+text(location[, 1], location[, 2], labels = colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
 ```
 
 change the sign to get the North in the upper part of the plot
 
 ```{r }
-plot(location[,1], -location[,2], type='n', asp=1, axes=FALSE, main="MDS of European cities",xlab='',ylab='')
-text(location[,1], -location[,2], labels=colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
+plot(location[, 1], -location[, 2], type = "n", asp = 1, axes = FALSE, main = "MDS of European cities", xlab = "", ylab = "")
+text(location[, 1], -location[, 2], labels = colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
 ```
 
 compare the original matrix d_ij = d(x_i,x_j) and delta_ij = d(y_i,y_j) 
@@ -1119,8 +1127,8 @@ plot(eurodist, dist(location))
 visualize the most different distances
 
 ```{r }
-par(cex = 0.75, mar = c(10,10,2,2))
-image(1:21, 1:21, asp=1, abs(as.matrix(dist(location)) - as.matrix(eurodist)), axes = F, xlab = '', ylab ='')
+par(cex = 0.75, mar = c(10, 10, 2, 2))
+image(1:21, 1:21, asp = 1, abs(as.matrix(dist(location)) - as.matrix(eurodist)), axes = F, xlab = "", ylab = "")
 axis(1, at = 1:21, labels = colnames(as.matrix(eurodist)), las = 2, cex = 0.75)
 axis(2, at = 1:21, labels = colnames(as.matrix(eurodist)), las = 1, cex = 0.75)
 box()
@@ -1129,15 +1137,15 @@ box()
 Rome-Athens
 
 ```{r }
-as.matrix(eurodist)[19,1]
-as.matrix(dist(location))[19,1]
+as.matrix(eurodist)[19, 1]
+as.matrix(dist(location))[19, 1]
 ```
 
 Cologne-Geneve
 
 ```{r }
-as.matrix(eurodist)[6,8]
-as.matrix(dist(location))[6,8]
+as.matrix(eurodist)[6, 8]
+as.matrix(dist(location))[6, 8]
 ```
 
 Compute the "stress": the higher it is, the worse
@@ -1146,15 +1154,15 @@ geometrical representation through MDS
 
 ```{r }
 Stressk <- NULL
-for(k in 1:4)
+for (k in 1:4)
 {
   location.k <- cmdscale(eurodist, k)
-  Stress <- (sum( (as.vector(eurodist) - as.vector(dist(location.k)))^2)  /
-               sum( as.vector(location.k)^2))^(1/2)
-  Stressk <- c(Stressk, Stress) 
+  Stress <- (sum((as.vector(eurodist) - as.vector(dist(location.k)))^2) /
+    sum(as.vector(location.k)^2))^(1 / 2)
+  Stressk <- c(Stressk, Stress)
 }
 
-plot(1:4,Stressk,xlab='k',ylab='Stress',lwd=2)
+plot(1:4, Stressk, xlab = "k", ylab = "Stress", lwd = 2)
 ```
 
 the stress increases for k>2 because of numerical problems 
@@ -1163,4 +1171,3 @@ the stress increases for k>2 because of numerical problems
 ```{r }
 graphics.off()
 ```
-

@@ -15,10 +15,8 @@ editor_options:
 ### Linear models
 
 library(MASS)
-library(car) # linearHypothesis() command
+library(car)
 library(rgl)
-
-setwd("~/Corsi/Statistica Applicata/Applied Statistics MATE 21-22/Lab 10 - 09052022")
 
 #_______________________________________________________________________________
 ##### Linear models
@@ -77,16 +75,14 @@ sum(residuals(fm)^2)/fm$df  # estimate of sigma^2
 plot(cars, xlab='Speed', ylab='Stopping distance', las=1, xlim=c(0,30), ylim=c(-5,130))
 x <- seq(0,30,by=0.1)
 b <- coef(fm)
-lines(x, b[1]+b[2]*x+b[3]*x^2) # add the model
+lines(x, b[1]+b[2]*x+b[3]*x^2)
 
 ##### Inference on the parameters
 ##### Assumption: Eps ~ N(0, sigma^2)
 #####-------------------------------------------
 ### Test (Fisher):
 # H0: (beta1, beta2) == (0, 0) vs H1: (beta1, beta2) != (0, 0)
-hypothesis.matrix <- rbind(c(0,1,0),
-                           c(0,0,1))
-linearHypothesis(fm, hypothesis.matrix, c(0,0)) 
+linearHypothesis(fm, rbind(c(0,1,0), c(0,0,1)), c(0,0)) 
 summary(fm)
 
 p <- 2  # number of tested coefficients
@@ -192,8 +188,7 @@ speed2.kmh2     <- cars$speed^2 * 1.6^2
 ###   H0: (beta0+beta2, beta1) == (0,0) vs H1: (beta0+beta2, beta1) != (0,0)
 
 #_______________________________________________________________________________
-### Example 2: Anscombe's quartet
-# cfr. https://www.rdocumentation.org/packages/asbio/versions/1.6-7/topics/anscombe
+### Example 2: Anscombe
 ###---------------------------------
 
 ### This example shows some cases for which examining data and 
@@ -224,7 +219,6 @@ summary(lm4)
 
 # same R^2, same coefficient estimate, same residual std error
 
-x11(width=14, height=7)
 par(mfcol=c(2,4))
 plot(x1,y1, main='Dataset 1')
 abline(lm1)
@@ -258,7 +252,7 @@ detach(anscombe)
 ##### Example 3: brain_weight
 #####--------------------------------------------------------
 
-data <- read.table('brain_weight.txt', header=T)
+data <- read.table(here::here('markdowns','lab_10_data','brain_weight.txt'), header=T)
 
 head(data)
 dim(data)
@@ -536,7 +530,6 @@ lines(x.plot, f(x.plot), col='blue', lty=2)   # true mean
 SSres <- SSres.new <- s2 <- b <- R2 <- R2.adj <- NULL
 n <- 21
 
-x11(width=14, height=7)
 par(mfrow=c(4,4), mar=rep(2,4))
 for(p in 1:16)
 {
@@ -558,7 +551,6 @@ for(p in 1:16)
 
 # compare some indices
 
-x11()
 par(mfrow=c(2,2))
 plot(1:16, SSres, pch=16)
 abline(v=3, col='blue', lty=2)
@@ -574,7 +566,6 @@ abline(v=3, col='blue', lty=2)
 
 b.true <- c(1,1,1,-1, rep(0,8))
 
-x11()
 par(mfrow=c(2,3))
 for(i in 1:5)
 {
@@ -619,7 +610,7 @@ graphics.off()
 #     will fall simultaneously within the respective ranges with 95%
 #     of probability.
 
-pb4  <- read.table('Pb4.txt')
+pb4  <- read.table(here::here('markdowns','lab_10_data','Pb4.txt'))
 pb4
 
 matplot(pb4, type='l',lwd=2, xlab='Year', ylab='Vehicles')
@@ -739,7 +730,7 @@ IP
 #    collected in June 2011 due to residents and that which will be collected
 #    in June 2011 due to the tourists.
 
-people <- read.table('people.txt', header=T)
+people <- read.table(here::here('markdowns','lab_10_data','people.txt'), header=T)
 people
 
 plot(people,pch=20)
@@ -828,7 +819,7 @@ dev.off()
 ##### Multiple linear regression with qualitative predictors
 #####--------------------------------------------------------
 
-data <- read.table('work.txt', header=T)
+data <- read.table(here::here('markdowns','lab_10_data','work.txt'), header=T)
 head(data)
 
 dim(data)
