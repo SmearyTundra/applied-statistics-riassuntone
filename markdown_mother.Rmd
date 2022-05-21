@@ -1,48 +1,58 @@
 ---
 title: ":("
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 3
-    number_section: yes
+	html_document:
+		toc: true
+		toc_float: true
+		number_sections: true
+	pdf_document:
+		toc: true
+		toc_depth: 3
+		number_section: true
 ---
+# Chunk options: https://rmarkdown.rstudio.com/lesson-3.html#:~:text=include%20%3D%20FALSE%20prevents%20code%20and,useful%20way%20to%20embed%20figures.
+
 ```{r setup, include=FALSE}
 path_images = paste(here::here("images"),"/", sep="")
 knitr::opts_chunk$set(fig.path = path_images,
                       echo = TRUE,
-                      dev = "png",
-                      dpi = 300,
-                      cache=TRUE)
+					  dev = "png",
+					  dpi = 300,
+					  cache=TRUE)
 ```
 
 ```{r child=here::here("markdowns","lab_1.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_2.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_3.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_4.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_5.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_6.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_7.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_8.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_9.rmd")}
-
 ```
+
 ```{r child=here::here("markdowns","lab_10.rmd")}
-
 ```
 
+```{r child=here::here("markdowns","lab_11.rmd")}
+```
+
+```{r child=here::here("markdowns","lab_12.rmd")}
+```
