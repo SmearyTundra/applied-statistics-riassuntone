@@ -1,19 +1,17 @@
 \newpage
 
-# LAB 9: 
-
 ```{r include=FALSE}
 path_images = paste(here::here("images"),"/", sep="")
 knitr::opts_chunk$set(fig.path = path_images,
                       echo = TRUE,
 					  dev = "png",
 					  dpi = 300,
-					  cache=TRUE)
+					  cache = TRUE)
+rm(list = ls())
 ```
 
+# LAB 9: 
 
-LAB 9 (29/04/2022) 
---------------------
 TOPICS:
 Hierarchical clustering
 K-means clustering
