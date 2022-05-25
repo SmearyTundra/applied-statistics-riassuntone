@@ -1,12 +1,16 @@
----
-output: html_document
-editor_options: 
- chunk_output_type: console
----
 \newpage
----------------------
-LAB 11 (13/05/2022) 
----------------------
+
+```{r include=FALSE}
+path_images = paste(here::here("images"),"/", sep="")
+knitr::opts_chunk$set(fig.path = path_images,
+                      echo = TRUE,
+					  dev = "png",
+					  dpi = 300,
+					  cache = TRUE)
+```
+
+# LAB 11 (13/05/2022)
+
 TOPICS:
 Linear models
 
