@@ -1,10 +1,15 @@
----
-output: html_document
-editor_options: 
- chunk_output_type: console
----
 \newpage
-LAB 12:
+
+```{r include=FALSE}
+path_images = paste(here::here("images"),"/", sep="")
+knitr::opts_chunk$set(fig.path = path_images,
+                      echo = TRUE,
+					  dev = "png",
+					  dpi = 300,
+					  cache = TRUE)
+```
+
+# LAB 12:
 
  Applied Statistics 2021/2022
  Linear Mixed-effects models
