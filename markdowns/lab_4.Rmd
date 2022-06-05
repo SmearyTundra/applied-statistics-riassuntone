@@ -270,6 +270,7 @@ mcshapiro.test(X)
 ## Example: test of normality for the dataset `stiff`.
 
 Dataset: each sample unit is a board. For each board, four measures of stiffness are taken (`X1`: sending a shock wave, `X2`: while vibrating the board, `X3` and `X4`: static tests).
+
 ```{r}
 stiff <- read.table(here::here('markdowns','lab_4_data','stiff.dat'))
 head(stiff)
@@ -277,6 +278,7 @@ plot(stiff, asp=1, pch=19)
 ```
 
 ### Normality of the components
+
 ```{r}
 par(mfcol=c(2,4))
 
@@ -291,6 +293,7 @@ for(i in 1:4)
 ```
 
 ### Normality of the principal components
+
 ```{r}
 PCs <- data.frame(princomp(stiff)$scores)
 
@@ -308,6 +311,7 @@ for(i in 1:4)
 ```
 
 ### Mahalanobis distances of the data from the sample mean
+
 ```{r}
 M <- colMeans(stiff)
 S <- cov(stiff)
@@ -326,7 +330,9 @@ d2.freq  <- table(d2.class)
 
 chisq.test(x = d2.freq, p = rep(1/6, 6), simulate.p.value = T)
 ```
+
 **Test of all the directions simultaneously.**
+
 ```{r}
 mcshapiro.test(stiff)
 ```
@@ -350,4 +356,5 @@ stiff.noout <- stiff[which(d2<7.5),]
 
 mcshapiro.test(stiff.noout)
 ```
+
 In this case removing the outliers solves the problem of non-gaussianity.

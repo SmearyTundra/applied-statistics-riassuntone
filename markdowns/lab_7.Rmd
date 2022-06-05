@@ -15,6 +15,7 @@ rm(list=ls())
 par(mfrow=c(1,1))
 load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 ```
+
 ## One-way ANOVA (p=1, g=6)
 Dataset Chicken Weights:
 Data from an experiment to measure and compare the effectiveness of various feed supplements on the growth rate of chickens. (71 observations)
@@ -69,6 +70,7 @@ Ps <- c(shapiro.test(weight[ feed==treat[1] ])$p,
         shapiro.test(weight[ feed==treat[6] ])$p) 
 Ps
 ```
+
 We don't reject normality.
 
 - same covariance structure (= same sigma^2, the covariance matrix is 1x1 since `p=1`)
@@ -90,6 +92,7 @@ H1: there exist i,j s.t. sigma.i!=sigma.j
 ```{r }
 bartlett.test(weight, feed)
 ```
+
 We don't reject H0.
 
 ### One-way ANOVA

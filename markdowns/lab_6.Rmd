@@ -33,7 +33,9 @@ effluent
 
 pairs(effluent,pch=19, main='Dataset effluent')
 ```
+
 We compute the sample of differences
+
 ```{r}
 D <- data.frame(DBOD=effluent[,1]-effluent[,3],
                 DSS =effluent[,2]-effluent[,4])
@@ -43,6 +45,7 @@ plot(D, asp=1, pch=19, main='Dataset of Differences')
 abline(h=0, v=0, col='grey35')
 points(0,0, pch=19, col='grey35')
 ```
+
 `DBOD`: difference in 'biochemical oxygen demand'
 `DSS`:  difference in 'suspended solids' measured by the two laboratories
 
@@ -78,6 +81,7 @@ cfr.fisher
 
 D.T2 < cfr.fisher
 ```
+
 We reject $H_0$ at level 5%.
 
 We compute the p-value
@@ -107,6 +111,7 @@ ellipse(center=D.mean, shape=D.cov/n, radius=sqrt((n-1)*p/(n-p)*qf(1-as.numeric(
 Now, let's communicate our results to the client. Let's build confidence intervals for linear combination of the components of the mean vector
 
 ## Simultaneous T2 intervals
+
 ```{r}
 IC.T2.DBOD <- c( D.mean[1]-sqrt(cfr.fisher*D.cov[1,1]/n) , D.mean[1], D.mean[1]+sqrt(cfr.fisher*D.cov[1,1]/n) )
 IC.T2.DSS  <- c( D.mean[2]-sqrt(cfr.fisher*D.cov[2,2]/n) , D.mean[2], D.mean[2]+sqrt(cfr.fisher*D.cov[2,2]/n) )
@@ -152,7 +157,9 @@ worst <- D.invcov %*% (D.mean-delta.0)
 worst <- worst/sqrt(sum(worst^2))
 worst
 ```
+
 Angle with the x-axis
+
 ```{r}
 theta.worst <- atan(worst[2]/worst[1])+pi
 theta.worst
@@ -254,6 +261,7 @@ abline(h=D.T2)
 ```
 
 ## Bonferroni intervals
+
 ```{r}
 k <- p  # 2
 cfr.t <- qt(1-alpha/(2*k),n-1)
@@ -425,6 +433,7 @@ par(mfrow=c(1,1))
 library(car)
 load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 ```
+
 ```{r}
 pressure <- read.table (here::here('markdowns','lab_6_data','pressure.txt'),
                         col.names=c('h.0','h.8','h.16','h.24'))
@@ -447,7 +456,9 @@ M
 S <- cov(pressure)
 S
 ```
+
 We build one of the possible contrast matrices to answer the question
+
 ```{r}
 C <- matrix(c(-1, 1, 0, 0,
               -1, 0, 1, 0,
@@ -476,7 +487,9 @@ cfr.fisher
 
 T2 < cfr.fisher
 ```
+
 `T2` is much higher than `cfr.fisher`: the p-value will be very small.
+
 ```{r}
 P <- 1-pf(T2*(n-(q-1))/((q-1)*(n-1)), (q-1), n-(q-1))
 P
@@ -599,6 +612,7 @@ load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 ```
 
 We build the data
+
 ```{r}
 t1 <- matrix(c(3,3,1,6,2,3),2)
 t1 <- data.frame(t(t1))
@@ -633,6 +647,7 @@ We compare the matrices
 ```{r}
 list(S1=t1.cov, S2=t2.cov, Spooled=Sp)
 ```
+
 Test $H_0$: `mu1 = mu2` vs $H_1$: `mu1 != mu2`, i.e. $H_0$: `mu1-mu2 = c(0,0)` vs $H_1$: `mu1-mu2 != c(0,0)`.
 
 ## Test statistics
