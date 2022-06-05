@@ -2,29 +2,40 @@
 # CLUSTERING
 ######
 
-n <- dim(data)[1]
-
+n <- dim(data)[1] # number of samples
 misc <- sample(n) # random permutation
+
+# d = distance
+# l = linkage
+
 # distance matrix
-distmatrix.distance <- dist(data, method='euclidean-canberra-manhattan')
+dist.matrix <- dist(data, method='euclidean-canberra-manhattan')
+
 # plot dist matrix
-image(1:n, 1:n, as.matrix(distmatrix.distance), main = "metrics: NAME OF METRIC", asp = 1, xlab = "i", ylab = "j")
+image(1:n, 1:n, as.matrix(dist.matrix), main = "metrics: NAME OF METRIC", asp = 1, xlab = "i", ylab = "j")
+
 # clustering
-clustering.distance_linkage <- hclust(distmatrix.distance, method = "single-average-complete")
-names(clustering.distance_linkage) # $order
+cluster.dl <- hclust(dist.matrix, method = "single-average-complete-ward.D2")
+names(cluster.dl) # $order
+
 # plot dendrogram
-plot(clustering.distance_linkage, main = "distance-linkage", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
+plot(cluster.dl, main = "distance-linkage", hang = -0.1, xlab = "", labels = F, cex = 0.6, sub = "")
 # with k cluster
-rect.hclust(clustering.distance_linkage, k = 2-3-4)
+rect.hclust(cluster.dl, k = 2-3-4)
+
 # cut the cluster
-cluster.cut <- cutree(clustering.distance_linkage, k = 2)
+cluster.dl.cut <- cutree(cluster.dl, k = 2)
+
+# how many
+table(cluster.dl.cut)
+
 # plot distinction
-plot(data, col = ifelse(cluster.cut == 1, "red", "blue"), pch = 19)
+plot(data, col = ifelse(cluster.dl.cut == 1, "red", "blue"), pch = 19) # or col = cluster.dl (+1 for changing colors)
 
 # cophenetic matrix
-coph.matrix <- cophenetic(clustering.distance_linkage)
+coph.matrix <- cophenetic(cluster.dl)
 # cophenetic coefficient
-coph.coeff <- cor(distmatrix.distance, coph.matrix)
+coph.coeff <- cor(dist.matrix, coph.matrix)
 
 
 
@@ -108,6 +119,10 @@ result.k$size         # dimention of the clusters
 
 x11()
 plot(data, col = result.k$cluster+1)
+
+# in 3d (not useful for exam)
+plot3d(Q, size = 3, col = result.k$cluster + 1, aspect = F)
+points3d(result.k$centers, size = 10)
 
 ### How to choose k:
 ### 1) evaluate the variability between the groups with respect to 
