@@ -1,0 +1,12 @@
+#### Geostat Notes
+-> foto binned variogram: it stabilizes
+-> model y(si) = a0 + delta(si)
+-> model assumptions: E[delta(si)] = 0, and II order stationarity:
+		E[z(si)] = m independent from si
+		Cov(z(s1),z(s2))=Cov(delts(s1),delta(s2))
+-> foto fitted model with gls
+
+-> universal kriging -> we relax secodn order stationarity, say E[z(si)]=msi
+
+BLUE = TRUE -> MEAN
+BLUE = FALSE -> PREDICTION
