@@ -17,7 +17,7 @@ rm(list = ls())
 
 # LAB 9
 
-```{r }
+```{r message=FALSE}
 library(mvtnorm)
 library(rgl)
 library(car)
@@ -390,12 +390,10 @@ plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Average linkage", col
 plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Complete linkage", col = cluster.ec + 1, pch = 16, asp = 1)
 ```
 
-Change the mean mu2
-Example:
-mu2 <- c(4.5,1.2)
-_______________________________________________________________________________
-Example 3: earthquakes dataset
--------------------------------
+Change the mean `mu2`
+Example: `mu2 <- c(4.5,1.2)`
+
+## Example 3: earthquakes dataset
 
 ```{r }
 help(quakes)
@@ -409,69 +407,54 @@ head(Q)
 plot3d(Q, size = 3, col = "orange", aspect = F)
 ```
 
-dissimilarity matrix (Euclidean metric)
+Dissimilarity matrix (Euclidean metric)
 
 ```{r }
 d <- dist(Q)
 
+par(mfrow=c(1,1))
 image(as.matrix(d))
+```
 
-par(mfrow = c(2, 2))
+Hierarchical clustering
+
+```{r }
+par(mfrow=c(2,2))
 
 clusts <- hclust(d, method = "single")
 plot(clusts, hang = -0.1, labels = FALSE, main = "single", xlab = "", sub = "")
-```
-
 rect.hclust(clusts, k=2)
 rect.hclust(clusts, k=3)
 
-```{r }
 clusta <- hclust(d, method = "average")
 plot(clusta, hang = -0.1, labels = FALSE, main = "average", xlab = "", sub = "")
-```
-
 rect.hclust(clusta, k=2)
 rect.hclust(clusta, k=3)
 
-```{r }
 clustc <- hclust(d, method = "complete")
 plot(clustc, hang = -0.1, labels = FALSE, main = "complete", xlab = "", sub = "")
-```
-
 rect.hclust(clustc, k=2)
 rect.hclust(clustc, k=3)
 
-```{r }
 clustw <- hclust(d, method = "ward.D2")
 plot(clustw, hang = -0.1, labels = FALSE, main = "ward", xlab = "", sub = "")
-```
-
 rect.hclust(clustw, k=2)
 rect.hclust(clustw, k=3)
-Ward-Linkage (see J-W p. 692-693):
-Ward considered hierarchical clustering procedures based on minimizing the
-'loss of information' from joining two groups. This method is usually implemented
-with loss of information taken to be an increase in an error sum of squares
-criterion, ESS. First for a given cluster k, let ESS[k] be the sum of the
-squared deviations of every item in the cluster from the cluster mean (centroid).
-(ESS[k]=sum_{x.j in cluster k} t(x.j-x.mean[k])%*%(x.j-x.mean[k]), where
-x.mean[k] is the centroid of cluster k).
-If there are currently K clusterts, define ESS as the sum of the ESS[k]
-(ESS=ESS[1]+ESS[2]+...+ESS[K]). At each step in the analysis, the union of
-every possible pair of clusters is considered, and the two clusters whose
-combination results in the smallest increase in ESS (minimum loss of information)
-are joined.
-Initially, each cluster consists of a single item and, if there are N items,
-ESS[k]=0, k=1,2,...,N, so ESS=0. At the other extreme, when all the clusters are
-combined in a single group of N items, the value of ESS is given by
-ESS=sum_j(t(x.j-x.mean)%*%(x.j-x.mean)), where x.j is the multivariate measurement
-associated with the jth item and x.mean is the mean of all items.
-
-```{r }
-open3d()
 ```
 
-single linkage
+### Ward-Linkage (see J-W p. 692-693)
+
+Ward considered hierarchical clustering procedures based on **minimizing the 'loss of information' from joining two groups**. This method is usually implemented with loss of information taken to be an increase in an error sum of squares criterion, **ESS**. First for a given cluster `k`, let `ESS[k]` be the sum of the squared deviations of every item in the cluster from the cluster mean (**centroid**). 
+
+```
+(ESS[k]=sum_{x.j in cluster k} t(x.j-x.mean[k])%*%(x.j-x.mean[k])
+```
+
+where `x.mean[k]` is the centroid of cluster `k`). If there are currently `K` clusters, define `ESS` as the sum of the `ESS[k]` (`ESS=ESS[1]+ESS[2]+...+ESS[K]`). At each step in the analysis, the union of every possible pair of clusters is considered, and the two clusters whose combination results in the *smallest increase* in `ESS` (minimum loss of information) are joined.
+
+Initially, each cluster consists of a single item and, if there are `N` items, `ESS[k]=0`, `k=1,2,...,N`, so `ESS=0`. At the other extreme, when all the clusters are combined in a single group of `N` items, the value of `ESS` is given by `ESS=sum_j(t(x.j-x.mean)%*%(x.j-x.mean))`, where `x.j` is the multivariate measurement associated with the `j`-th item and `x.mean` is the mean of all items.
+
+### Single linkage
 
 ```{r }
 clusters <- cutree(clusts, 2)
@@ -481,7 +464,7 @@ clusters <- cutree(clusts, 3)
 plot3d(Q, size = 3, col = clusters + 1, aspect = F)
 ```
 
-average linkage
+### Average linkage
 
 ```{r }
 clustera <- cutree(clusta, 2)
@@ -491,7 +474,7 @@ clustera <- cutree(clusta, 3)
 plot3d(Q, size = 3, col = clustera + 1, aspect = F)
 ```
 
-complete linkage
+### Complete linkage
 
 ```{r }
 clusterc <- cutree(clustc, 2)
@@ -501,7 +484,7 @@ clusterc <- cutree(clustc, 3)
 plot3d(Q, size = 3, col = clusterc + 1, aspect = F)
 ```
 
-ward linkage
+### Ward linkage
 
 ```{r }
 clusterw <- cutree(clustw, 2)
@@ -511,23 +494,22 @@ clusterw <- cutree(clustw, 3)
 plot3d(Q, size = 3, col = clusterw + 1, aspect = F)
 ```
 
-_______________________________________________________________________________
-## K-means method
+### K-means method
 
-Recall K-means algorithm:
-simulated data
+Simulated data
 
 ```{r }
 n <- 100
 set.seed(1)
 x <- matrix(rnorm(n * 2), ncol = 2)
-x[1:(n / 2), 1] <- x[1:(n / 2), 1] + 2
-x[1:(n / 2), 2] <- x[1:(n / 2), 2] - 2
+x[1:(n / 2), 1] <- x[1:(n / 2), 1] + 2 # add 2 to first half of 1st col
+x[1:(n / 2), 2] <- x[1:(n / 2), 2] - 2 # sub 2 to first half of 2nd col
 
+par(mfrow=c(1,1))
 plot(x, pch = 20, cex = 2, xlab = "x1", ylab = "x2")
 ```
 
-k-means algorithm
+K-means algorithm
 
 ```{r }
 k <- 2
@@ -539,38 +521,37 @@ colpoints <- c("blue4", "red4")
 
 par(mfrow = c(iter.max, 3))
 
-for (i in 1:iter.max)
-{
-  C <- NULL
-  for (l in 1:k) {
-    C <- rbind(C, colMeans(x[cluster == l, ]))
-  }
+for (i in 1:iter.max) {
+    C <- NULL
+    for (l in 1:k) {
+        C <- rbind(C, colMeans(x[cluster == l, ]))
+    }
 
-  plot(x, col = colplot[cluster], pch = 19)
-  line <- readline()
+    plot(x, col = colplot[cluster], pch = 19)
+    line <- readline()
 
-  points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
-  line <- readline()
+    points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
+    line <- readline()
 
-  plot(x, col = "grey", pch = 19)
-  points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
-  line <- readline()
+    plot(x, col = "grey", pch = 19)
+    points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
+    line <- readline()
 
-  QC <- rbind(C, x)
-  Dist <- as.matrix(dist(QC, method = "euclidean"))[(k + 1):(k + n), 1:k]
-  for (j in 1:n) {
-    cluster[j] <- which.min(Dist[j, ])
-  }
+    QC <- rbind(C, x)
+    Dist <- as.matrix(dist(QC, method = "euclidean"))[(k + 1):(k + n), 1:k]
+    for (j in 1:n) {
+        cluster[j] <- which.min(Dist[j, ])
+    }
 
-  plot(x, col = colplot[cluster], pch = 19)
-  points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
-  line <- readline()
+    plot(x, col = colplot[cluster], pch = 19)
+    points(C, col = colpoints, pch = 4, cex = 2, lwd = 2)
+    # line <- readline() # when this is on, you have to press space to go to the next iteration
 }
 ```
 
+Back to the earthquakes dataset
 
-back to the earthquakes dataset
-in automatic, command `kmeans()`
+In automatic, command `kmeans()`
 
 ```{r }
 help(kmeans)
@@ -589,63 +570,51 @@ result.k$size # dimension of the clusters
 
 plot(Q, col = result.k$cluster + 1)
 
-open3d()
 plot3d(Q, size = 3, col = result.k$cluster + 1, aspect = F)
 points3d(result.k$centers, size = 10)
 ```
 
-How to choose k:
-1) evaluate the variability between the groups with respect to
-  the variability withing the groups
-2) evaluate the result of hierarchical clustering (not recommended,
-   quite computationally expensive)
-(we've just seen method 2) and suggested k = 2)
-method 1)
+**How to choose `k`:**
+
+1. evaluate the variability between the groups with respect to the variability withing the groups
+2. evaluate the result of hierarchical clustering (not recommended, quite computationally expensive)
+
+We've just seen method 2. and suggested `k=2`!
+
+Method 1.
 
 ```{r }
 b <- NULL
 w <- NULL
 for (k in 1:10) {
-  result.k <- kmeans(Q, k)
-  w <- c(w, sum(result.k$wit))
-  b <- c(b, result.k$bet)
+    result.k <- kmeans(Q, centers = k)
+    w <- c(w, sum(result.k$withinss))
+    b <- c(b, result.k$betweenss)
 }
 
-matplot(1:10, w / (w + b), pch = "", xlab = "clusters", ylab = "within/tot", main = "Choice of k", ylim = c(0, 1))
-lines(1:10, w / (w + b), type = "b", lwd = 2)
+par(mfrow=c(1,1))
+matplot(1:10, w / (w + b), pch = "", xlab = "# clusters", ylab = "within/tot", main = "Choice of k", ylim = c(0, 1)) # empty but right size
+lines(1:10, w / (w + b), type = "b", lwd = 2) # adding the line
 ```
 
-this method seems to suggest k = 2 or 3
-let's try also k=3:
+This method seems to suggest `k=2` or `3`. Let's try also `k=3`:
 
 ```{r }
 result.k <- kmeans(Q, 3)
 
 plot(Q, col = result.k$cluster + 1)
 
-open3d()
 plot3d(Q, size = 3, col = result.k$cluster + 1, aspect = F)
 points3d(result.k$centers, size = 10)
 ```
 
-_______________________________________________________________________________
-Exercises
-Problem 3 of July 1, 2009
------------------------------
-The Veritatis Diagram is a mysterious work attributed to Galileo. Some
-semiologists believe that some pages of the book hide a coded message;
-they also believe that these pages are characterized by an abnormal
-numerosity of some letters of the alphabet. The veritatis.txt file
-lists, for 132 pages of the book, the absolute frequencies of the five
-vowels of the Latin alphabet.
-a) By using an agglomerative clustering algorithm (Manhattan distance,
-   average linkage), identify two clusters and report suspicious pages;
-b) assuming that, for each of the two clusters, the five absolute
-   frequencies are (approximately) normally distributed with the same
-   covariance matrix perform a test to prove the existence of a difference
-   in the mean value of the two distributions;
-c) using five Bonferroni intervals of global confidence 90%, comment the
-   results of the test at point (b).
+## Problem 3 of July 1, 2009
+
+The Veritatis Diagram is a mysterious work attributed to Galileo. Some semiologists believe that some pages of the book hide a coded message; they also believe that these pages are characterized by an abnormal numerosity of some letters of the alphabet. The `veritatis.txt` file lists, for 132 pages of the book, the absolute frequencies of the five vowels of the Latin alphabet.
+
+a. By using an agglomerative clustering algorithm (Manhattan distance, average linkage), identify two clusters and report suspicious pages;
+b. assuming that, for each of the two clusters, the five absolute frequencies are (approximately) normally distributed with the same covariance matrix perform a test to prove the existence of a difference in the mean value of the two distributions;
+c. using five Bonferroni intervals of global confidence 90%, comment the results of the test at point b.
 
 ```{r }
 vowels <- read.table(here::here("markdowns","lab_9_data","veritatis.txt"), header = T)
@@ -653,7 +622,7 @@ head(vowels)
 dim(vowels)
 ```
 
-question a)
+Question a.
 
 ```{r }
 plot(vowels)
@@ -663,7 +632,6 @@ HC <- hclust(dist(vowels, method = "manhattan"), method = "average")
 plot(HC, hang = -0.1, sub = "", labels = F, xlab = "")
 
 # we cut the dendrogram at k=2 clusters
-
 rect.hclust(HC, k = 2)
 
 pag <- cutree(HC, k = 2)
@@ -673,7 +641,7 @@ which(pag == 2)
 plot(vowels, col = pag + 1, asp = 1, pch = 16, lwd = 2)
 ```
 
-question b)
+Question b.
 
 ```{r }
 p <- 5
@@ -681,7 +649,7 @@ n1 <- table(pag)[1]
 n2 <- table(pag)[2]
 ```
 
-Verify gaussianity
+Verify Gaussianity
 
 ```{r }
 mcshapiro.test(vowels[pag == "1", ])
@@ -698,7 +666,7 @@ t2.cov <- cov(vowels[pag == "2", ])
 Sp <- ((n1 - 1) * t1.cov + (n2 - 1) * t2.cov) / (n1 + n2 - 2)
 ```
 
-Test: H0: mu.1-mu.2==0 vs H1: mu.1-mu.2!=0
+Test: $H_0$: `mu.1-mu.2==0` vs $H_1$: `mu.1-mu.2!=0`
 
 ```{r }
 delta.0 <- c(0, 0, 0, 0, 0)
@@ -708,38 +676,27 @@ P <- 1 - pf(T2 / (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)), p, n1 + n2 - 1 - p)
 P
 ```
 
-question c)
+We reject the test, i.e. the means are different with strong evidence.
+
+Question c.
 
 ```{r }
 alpha <- 0.1
 IC <- cbind(
-  t2.mean - t1.mean - sqrt(diag(Sp) * (1 / n1 + 1 / n2)) * qt(1 - alpha / (p * 2), n1 + n2 - 2),
+  t2.mean - t1.mean - sqrt(diag(Sp) * (1/n1+1/n2)) * qt(1-alpha/(p*2), n1+n2-2),
   t2.mean - t1.mean,
-  t2.mean - t1.mean + sqrt(diag(Sp) * (1 / n1 + 1 / n2)) * qt(1 - alpha / (p * 2), n1 + n2 - 2)
+  t2.mean - t1.mean + sqrt(diag(Sp) * (1/n1+1/n2)) * qt(1-alpha/(p*2), n1+n2-2)
 )
 IC
 ```
 
-_______________________________________________________________________________
-Problem 2 of February 18, 2009
---------------------------------
-Friday, October 17, 2008, in Black Fortune skies a crash occurred between
-two artificial satellites. About a hundred debris were found on the
-ground (satellite.txt file). However, due to friction with the atmosphere it
-was not possible to define the origin of any debris. To clarify the
-accident, the US Air Force requests to estimate the relative position of
-the two points of impact on the ground.
-Assuming that the debris coming from the same satellite are scattered on
-the ground according to a normal law of unknown mean and covariance matrix:
-a) attribute the debris to the two satellites via a hierarchical clustering
-   algorithm that uses the Euclidean distance and the average linkage;
-b) report the numerosity of the two clusters and the value of the cophenetic
-   coefficient;
-c) introducing the appropriate hypotheses, identifying the points of impact
-   on the ground with the mean of the two normal distributions and assuming
-   correct the allocation of the debris to the two satellites, provide an elliptical
-   confidence region (global level 99%) for the relative position of the two
-   points of impact on the ground.
+## Problem 2 of February 18, 2009
+
+Friday, October 17, 2008, in Black Fortune skies a crash occurred between two artificial satellites. About a hundred debris were found on the ground (`satellite.txt` file). However, due to friction with the atmosphere it was not possible to define the origin of any debris. To clarify the accident, the US Air Force requests to estimate the relative position of the two points of impact on the ground. Assuming that the debris coming from the same satellite are scattered on the ground according to a normal law of unknown mean and covariance matrix:
+
+a. attribute the debris to the two satellites via a hierarchical clustering algorithm that uses the Euclidean distance and the average linkage;
+b. report the numerosity of the two clusters and the value of the cophenetic coefficient;
+c. introducing the appropriate hypotheses, identifying the points of impact on the ground with the mean of the two normal distributions and assuming correct the allocation of the debris to the two satellites, provide an elliptical confidence region (global level 99%) for the relative position of the two points of impact on the ground.
 
 ```{r }
 satellite <- read.table(here::here("markdowns","lab_9_data","satellite.txt"), header = T)
@@ -748,7 +705,7 @@ head(satellite)
 plot(satellite, asp = 1, pch = 16)
 ```
 
-question a)
+Question a.
 
 ```{r }
 D.s <- dist(satellite)
@@ -758,7 +715,6 @@ HCa <- hclust(D.s, method = "average")
 plot(HCa, hang = -0.1, sub = "", xlab = "", labels = F)
 
 # we know that there are 2 clusters, so we cut the dendrograms accordingly:
-
 rect.hclust(HCa, k = 2)
 
 sata <- cutree(HCa, k = 2)
@@ -766,7 +722,7 @@ sata <- cutree(HCa, k = 2)
 plot(satellite, col = sata + 1, asp = 1, pch = 16, main = "Average")
 ```
 
-question b)
+Question b.
 
 ```{r }
 table(sata)
@@ -777,7 +733,7 @@ coph.sat <- cor(D.s, coph.a)
 coph.sat
 ```
 
-question c)
+Question c.
 
 ```{r }
 p <- 2
@@ -786,10 +742,12 @@ n2 <- table(sata)[2]
 ```
 
 Assumptions:
+
 - Normality
-- Independent populations
+- Independent populations (ok)
 - Homogeneity of covariance structures
-Verificy Gaussian assumption
+
+Normality
 
 ```{r }
 mcshapiro.test(satellite[sata == "1", ])$pvalue
@@ -801,23 +759,22 @@ t1.cov <- cov(satellite[sata == "1", ])
 t2.cov <- cov(satellite[sata == "2", ])
 ```
 
-Homogeneity of covariances
+Homogeneity of covariance structures
 
 ```{r }
 t1.cov
 t2.cov
 
-Sp <- ((n1 - 1) * t1.cov + (n2 - 1) * t2.cov) / (n1 + n2 - 2)
+Sp <- ((n1-1) * t1.cov + (n2-1) * t2.cov) / (n1+n2-2)
 ```
 
 Elliptic confidence region at 99%
 
 ```{r }
 alpha <- 0.01
-cfr.fisher <- (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)) * qf(1 - alpha, p, n1 + n2 - 1 - p)
+cfr.fisher <- (p * (n1+n2-2) / (n1+n2-1-p)) * qf(1-alpha, p, n1+n2-1-p)
 ```
 
-Characterize the ellipse:
 Directions of the axes
 
 ```{r }
@@ -839,51 +796,43 @@ par(mfrow = c(1, 2))
 plot(satellite, col = sata + 1, asp = 1, pch = 16, main = "Original data and groups")
 plot(satellite,
   xlim = c(-23, -15), ylim = c(-25, -17), pch = "", asp = 1,
-  main = "Elliptic region for the mean diff. (red - green)"
+  main = "Elliptic region for\nthe mean diff. (red - green)", cex.main = 0.8
 )
 
 # confidence region and sample mean in blue
-
 ellipse(
-  center = t1.mean - t2.mean, shape = Sp * (1 / n1 + 1 / n2), radius = sqrt(cfr.fisher),
+  center = t1.mean - t2.mean,
+  shape  = Sp * (1/n1 + 1/n2),
+  radius = r,
   lwd = 2, col = "blue"
 )
 ```
 
-_______________________________________________________________________________
-Problem 2 of February 28, 2013
---------------------------------
-In view of the week of haute couture in Paris, the fashion house La Boutin
-has decided to create a unique-edition pair of shoes decorated with
-gemstones instead of crystals. During the processing of the pair of shoes,
-a bumbling craftsman caused the fall of the gemstones and of a
-box of crystals. The file preziosi.txt collects data related to the Cartesian
-coordinates of the found stones.
-a) Through a hierarchical clustering algorithm (Euclidean distance and
-   Ward linkage), identify the two clusters of stones.
-b) reporting the numerosity of the two groups identified at point a) and
-   the value of the cophenetic coefficient.
-c) Identify the gemstones with the smaller group. Having introduced
-   (and verified) the appropriate assumptions, estimate an elliptical region
-   containing 99% of gemstones (report the center, the length and the direction
-   of the principal axes of the ellipse).
+## Problem 2 of February 28, 2013
+
+In view of the week of *haute couture* in Paris, the fashion house La Boutin has decided to create a unique-edition pair of shoes decorated with gemstones instead of crystals. During the processing of the pair of shoes, a bumbling craftsman caused the fall of the gemstones and of a box of crystals. The file `preziosi.txt` collects data related to the Cartesian coordinates of the found stones.
+
+a. Through a hierarchical clustering algorithm (Euclidean distance and Ward linkage), identify the 2 clusters of stones.
+b. reporting the numerosity of the two groups identified at point a) and the value of the cophenetic coefficient.
+c. Identify the gemstones with the smaller group. Having introduced (and verified) the appropriate assumptions, estimate an elliptical region containing 99% of gemstones (report the center, the length and the direction of the principal axes of the ellipse).
 
 ```{r }
 stones <- read.table(here::here("markdowns","lab_9_data","preziosi.txt"), header = TRUE)
+par(mfrow=c(1,1))
 plot(stones)
 ```
 
-question a)
+Question a.
 
 ```{r }
 p.e <- dist(stones, method = "euclidean")
 p.ew <- hclust(p.e, method = "ward.D2")
 
 plot(p.ew, hang = -0.1, sub = "", xlab = "", labels = F)
-cl.ew <- cutree(p.ew, k = 2) # euclidea-ward
+cl.ew <- cutree(p.ew, k = 2) # euclidean-ward
 ```
 
-question b)
+Question b.
 
 ```{r }
 table(cl.ew)
@@ -893,10 +842,10 @@ ew <- cor(p.e, coph.ew)
 ew
 ```
 
-question c)
+Question c.
 
 ```{r }
-p.pr <- stones[which(cl.ew == 2), ]
+p.pr <- stones[which(cl.ew == 2), ] # from the table, 2 is the smallest
 n <- dim(p.pr)[1]
 p <- dim(p.pr)[2]
 
@@ -904,15 +853,18 @@ plot(stones)
 points(p.pr, pch = 19)
 ```
 
-Verify gaussian assumptions
+Normality
 
 ```{r }
-mcshapiro.test(p.pr)
+mcshapiro.test(p.pr)$pvalue
 
 M <- sapply(p.pr, mean)
 S <- cov(p.pr)
 alpha <- 0.01
-cfr.chisq <- qchisq(1 - alpha, p)
+
+cfr.fisher <- (n-1)*p/(n-p)*qf(1-alpha,p,n-p)
+# when n large this should approximate the correct one
+# cfr.chisq <- qchisq(1 - alpha, p)
 ```
 
 Characterize the ellipse:
@@ -931,7 +883,7 @@ M
 Radius of the ellipse:
 
 ```{r }
-r <- sqrt(cfr.chisq)
+r <- sqrt(cfr.fisher)
 ```
 
 Length of the semi-axes:
@@ -942,30 +894,24 @@ r * sqrt(eigen(S)$values)
 plot(p.pr, asp = 1, col = "gold", pch = 19, xlim = c(-10, 50))
 points(M[1], M[2], pch = 4, cex = 1.5, lwd = 2)
 
-ellipse(center = M, shape = S, radius = sqrt(cfr.chisq), col = "black", lty = 2, center.pch = 4)
+ellipse(center = M, shape = S, radius = r, col = "black", lty = 2, center.pch = 4)
 points(stones[which(cl.ew == 1), ])
 ```
 
-_______________________________________________________________________________
-Problem 3 of February 28, 2007
---------------------------------
-The dataset Pb3.txt reports Length (cm) Width (cm) of the chest of
-50 sparrows. The biologist who has collected the measurements aims to
-demonstrate that the sparrows can be divided into two distinct groups
-in terms of length and width of the chest. Help him to prove his theory
-by implementing and commenting on the following analyses:
-(a) By means of an agglomerative hierarchical clustering algorithm that
-    uses the Manhattan distance and the Single linkage state if it is
-    reasonable to cluster the data into two groups.
-(b) Implement a test to prove the difference of the means of the two groups.
-(c) Identify and comment the four Bonferroni intervals with global confidence
-    90% (lower bound, central value, upper bound) for:
-    - The difference of the mean of the variable length.
-    - The difference of the mean of the variable width.
-    - The difference of the mean of the sum of the variables length and width.
-    - The difference of the mean of the difference of variable length and
-      width.
-(d) verify the assumptions necessary to the implementation of the test.
+## Problem 3 of February 28, 2007
+
+The dataset `Pb3.txt` reports Length (cm) Width (cm) of the chest of 50 sparrows (in Italian: passeri). The biologist who has collected the measurements aims to demonstrate that the sparrows can be divided into two distinct groups in terms of length and width of the chest. Help him to prove his theory by implementing and commenting on the following analyses:
+
+a. By means of an agglomerative hierarchical clustering algorithm that uses the Manhattan distance and the Single linkage state if it is reasonable to cluster the data into two groups.
+b. Implement a test to prove the difference of the means of the two groups.
+c. Identify and comment the four Bonferroni intervals with global confidence 90% (lower bound, central value, upper bound) for: 
+
+- The difference of the mean of the variable length. 
+- The difference of the mean of the variable width. 
+- The difference of the mean of the sum of the variables length and width. 
+- The difference of the mean of the difference of variable length and width.
+
+d. verify the assumptions necessary to the implementation of the test.
 
 ```{r }
 sparrows <- read.table(here::here("markdowns","lab_9_data","Pb3.txt"))
@@ -973,33 +919,33 @@ head(sparrows)
 dim(sparrows)
 ```
 
-question (a)
+Question a.
 
 ```{r }
 plot(sparrows, pch = 16)
 
-gruppi <- hclust(dist(sparrows, method = "manhattan"), method = "single")
-plot(gruppi, hang = -0.1, sub = "", xlab = "", labels = F)
+groups <- hclust(dist(sparrows, method = "manhattan"), method = "single")
+plot(groups, hang = -0.1, sub = "", xlab = "", labels = F)
 ```
 
-cut in two groups
+Cut in 2 groups
 
 ```{r }
-cluster <- cutree(gruppi, k = 2)
+cluster <- cutree(groups, k = 2)
 
 plot(sparrows, pch = 16, col = as.vector(cluster) + 1)
 ```
 
-question (b)
+Question b.
 
 ```{r }
 g1 <- sparrows[cluster == 1, ]
 g2 <- sparrows[cluster == 2, ]
-g1
-g2
+head(g1)
+head(g2)
 ```
 
-Test: H0: mu.1-mu.2==0 vs H1: mu.1-mu.2!=0
+Test: $H_0$: `mu.1-mu.2==0` vs $H_1$: `mu.1-mu.2!=0`
 
 ```{r }
 p <- 2
@@ -1024,25 +970,29 @@ pvalue <- 1 - pf(T2 / (p * (n1 + n2 - 2) / (n1 + n2 - 1 - p)), p, n1 + n2 - 1 - 
 pvalue
 ```
 
-question (c)
+We have strong evidence that the mean of the two groups is different.
+
+Question c.
 
 ```{r }
-dm <- (mean1 - mean2)
-A <- rbind(c(1, 0), c(0, 1), c(1, 1), c(1, -1))
+A <- rbind(c(1,  0), # first variable
+           c(0,  1), # second variable
+           c(1,  1), # their sum
+           c(1, -1)) # their difference
 k <- dim(A)[1]
 
 A.s2 <- diag(A %*% Sp %*% t(A))
 A.dm <- A %*% (mean1 - mean2)
 
 Bonf <- cbind(
-  inf = A.dm - qt(1 - (alpha / (2 * k)), n1 + n2 - 2) * sqrt(A.s2 * (1 / n1 + 1 / n2)),
+  inf = A.dm - qt(1-(alpha/(2*k)), n1+n2-2) * sqrt(A.s2 * (1/n1 + 1/n2)),
   center = A.dm,
-  sup = A.dm + qt(1 - (alpha / (2 * k)), n1 + n2 - 2) * sqrt(A.s2 * (1 / n1 + 1 / n2))
+  sup = A.dm + qt(1-(alpha/(2*k)), n1+n2-2) * sqrt(A.s2 * (1/n1 + 1/n2))
 )
 Bonf
 ```
 
-question (d)
+Question d.
 
 ```{r }
 mcshapiro.test(g1)$pvalue
@@ -1052,24 +1002,19 @@ cov1
 cov2
 ```
 
-_______________________________________________________________________________
 ## Multidimensional Scaling (principal coordinate analysis)
----------------------------------------------------------
-Given the distances (dissimilarities) among n statistical units, look for
-the k-dimensional representation (k small) of the n statistical units
-such that the distances (dissimilarities) among the representations
-of the n units are as close as possible to the original distances
-(dissimilarities) among the n units.
-Example 1: European cities
----------------------------
+
+Given the distances (dissimilarities) among $n$ statistical units, look for the $k$-dimensional representation ($k$ small, 2,3) of the $n$ statistical units such that the distances (dissimilarities) among the representations of the $n$ units are as close as possible to the original distances (dissimilarities) among the n units.
+
+### Example 1: European cities
 
 ```{r }
 help(eurodist)
-eurodist
+dim(eurodist) # road distances among European cities
+n <- dim(eurodist)[1]
 ```
 
-road distances among European cities
-R function for multidimensional scaling: cmdscale
+R function for multidimensional scaling: `cmdscale`
 
 ```{r }
 help(cmdscale)
@@ -1078,35 +1023,35 @@ location <- cmdscale(eurodist, k = 2)
 location
 ```
 
-I have to set asp=1 (equal scales on the two axes)
-to correctly represent Euclidean distances
+I have to set `asp=1` (equal scales on the two axes) to correctly represent Euclidean distances
 
 ```{r }
-plot(location[, 1], location[, 2], type = "n", asp = 1, axes = FALSE, main = "MDS of European cities", xlab = "", ylab = "")
-text(location[, 1], location[, 2], labels = colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
+plot(location[, 1], -location[, 2],
+     pch = 16, asp = 1, axes = FALSE, cex = 0.4,
+     main = "MDS of European cities", xlab = "", ylab = "")
+text(location[, 1], -location[, 2],
+     labels = colnames(as.matrix(eurodist)), cex = 0.75, pos = 2)
 ```
 
-change the sign to get the North in the upper part of the plot
+The minus is to get the North in the upper part of the plot.
 
-```{r }
-plot(location[, 1], -location[, 2], type = "n", asp = 1, axes = FALSE, main = "MDS of European cities", xlab = "", ylab = "")
-text(location[, 1], -location[, 2], labels = colnames(as.matrix(eurodist)), cex = 0.75, pos = 3)
-```
-
-compare the original matrix d_ij = d(x_i,x_j) and delta_ij = d(y_i,y_j)
+Compare the original matrix `d_ij = d(x_i,x_j)` and `delta_ij = d(y_i,y_j)`
 
 ```{r }
 plot(eurodist, dist(location))
 ```
 
-visualize the most different distances
+Visualize the most different distances
 
 ```{r }
 par(cex = 0.75, mar = c(10, 10, 2, 2))
-image(1:21, 1:21, asp = 1, abs(as.matrix(dist(location)) - as.matrix(eurodist)), axes = F, xlab = "", ylab = "")
+image(1:21, 1:21, asp = 1,
+      abs(as.matrix(dist(location)) - as.matrix(eurodist)),
+      axes = F, xlab = "", ylab = "")
 axis(1, at = 1:21, labels = colnames(as.matrix(eurodist)), las = 2, cex = 0.75)
 axis(2, at = 1:21, labels = colnames(as.matrix(eurodist)), las = 1, cex = 0.75)
 box()
+par(cex = 1, mar = c(5.1, 4.1, 4.1, 2.1))
 ```
 
 Rome-Athens
@@ -1123,9 +1068,7 @@ as.matrix(eurodist)[6, 8]
 as.matrix(dist(location))[6, 8]
 ```
 
-Compute the "stress": the higher it is, the worse
-the matching between original distances and their
-geometrical representation through MDS
+Compute the **stress**: the higher it is, the worse the matching between original distances and their geometrical representation through MDS
 
 ```{r }
 Stressk <- NULL
@@ -1140,7 +1083,4 @@ for (k in 1:4)
 plot(1:4, Stressk, xlab = "k", ylab = "Stress", lwd = 2)
 ```
 
-the stress increases for k>2 because of numerical problems
-(the representation of minimal stress is not always found)
-
-```{r }```
+The stress increases for `k>2` because of numerical problems (the representation of minimal stress is not always found)
