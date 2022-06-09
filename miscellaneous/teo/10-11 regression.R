@@ -13,6 +13,7 @@ airfoil$velocity <- factor(airfoil$velocity)
 #regression
 fit1 <- lm(sound ~ frequency*velocity, data = airfoil)   #I(velocity^2)
 summary(fit1)
+sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
 shapiro.test(fit1$residuals)
 vif(fit1)
 par(mfrow=c(2,2))
@@ -34,6 +35,7 @@ plot(fit2)
 
 #prediction & confidence interval 
 new <- data.frame(frequency = 15000, velocity = 'H' )
+# or new <- data.frame(name = seq(min(original_data),max(original_data),len=100))
 answer <- predict(fit2, newdata = new, interval = 'confidence') #level = 1-alpha
                                                   #'prediction'
                                                   #'

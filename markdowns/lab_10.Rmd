@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 \newpage
 
 ```{r include=FALSE}
@@ -9,27 +14,18 @@ knitr::opts_chunk$set(fig.path = path_images,
 					  cache = TRUE)
 ```
 
-# LAB 10:
+# LAB 10: Linear Models
 
----------------------
-LAB 10 (09/05/2022) 
----------------------
-TOPICS:
-Linear models
-
-```{r }
+```{r message=FALSE}
+rm(list = ls())
 library(MASS)
 library(car)
 library(rgl)
 ```
 
-_______________________________________________________________________________
-Linear models
----------------
-Example 1: Multiple linear regression
-----------------------------------------
-Dataset cars: distance taken to stop [ft] as a function of velocity [mph]
-for some cars in the 1920s
+## Example 1: Multiple linear regression
+
+Dataset `cars`: distance taken to stop [ft] as a function of velocity [mph] for some cars in the 1920s.
 
 ```{r }
 help(cars)
@@ -46,14 +42,16 @@ speed2     <- cars$speed^2
 ```
 
 Model:
-distance = beta_0 + beta_1 * speed + beta_2 * speed^2 + Eps
+$$\texttt{distance} = \beta_0 + \beta_1 \cdot \texttt{speed} + \beta_2 \cdot \texttt{speed}^2 + \varepsilon$$
 (linear in the parameters!)
 Assumptions:
-1) Parameter estimation: E(Eps) = 0  and  Var(Eps) = sigma^2 
-2) Inference:            Eps ~ N(0, sigma^2)
-1) Estimate of the parameters
-Assumptions: E(Eps) = 0  and  Var(Eps) = sigma^2 
---------------------------------------------------
+
+1. Estimation on Parameters: $\mathbb{E}(\varepsilon)=0$ and  $\mathrm{Var}(\varepsilon)=\sigma^2$.
+2. Inference on Parameters: $\varepsilon \sim \mathcal{N}(0, \sigma^2)$
+
+**Estimation on Parameters**
+
+Assumptions: $\mathbb{E}(\varepsilon)=0$ and  $\mathrm{Var}(\varepsilon)=\sigma^2$.
 
 ```{r }
 help(lm)
@@ -64,19 +62,25 @@ summary(fm)
 
 Note: collinearity
 
-```{r }
+```
 fitted(fm)        # y hat
 residuals(fm)     # eps hat
+```
 
+```{r }
 coefficients(fm)  # beta_i
 vcov(fm)          # cov(beta_i)
 
 fm$rank # order of the model [r+1]
 fm$df   # degrees of freedom of the residuals [n-(r+1)]
+```
 
+```
 hatvalues(fm) # h_ii
 rstandard(fm) # standardized residuals
+```
 
+```{r }
 sum(residuals(fm)^2)/fm$df  # estimate of sigma^2
 
 plot(cars, xlab='Speed', ylab='Stopping distance', las=1, xlim=c(0,30), ylim=c(-5,130))
@@ -85,22 +89,25 @@ b <- coef(fm)
 lines(x, b[1]+b[2]*x+b[3]*x^2)
 ```
 
-Inference on the parameters
-Assumption: Eps ~ N(0, sigma^2)
--------------------------------------------
+**Inference on Parameters**
+
+Assumptions: $\varepsilon \sim \mathcal{N}(0, \sigma^2)$
+
 Test (Fisher):
 H0: (beta1, beta2) == (0, 0) vs H1: (beta1, beta2) != (0, 0)
 
 ```{r }
-linearHypothesis(fm, rbind(c(0,1,0), c(0,0,1)), c(0,0)) 
+linearHypothesis(fm, rbind(c(0,1,0),
+                           c(0,0,1)), c(0,0)) 
 summary(fm)
 
 p <- 2  # number of tested coefficients
 r <- 2  # number of regressors
 ```
 
-Confidence region:
-center: point estimate
+### Confidence region
+
+Center: point estimate
 
 ```{r }
 c(coefficients(fm)[2], coefficients(fm)[3])
@@ -127,6 +134,7 @@ Bf <- rbind(
   beta2=c(coefficients(fm)[3]-sqrt(vcov(fm)[3,3])*qt(1-0.05/(2*p), n-(r+1)),
           coefficients(fm)[3]+sqrt(vcov(fm)[3,3])*qt(1-0.05/(2*p), n-(r+1)))
 )
+colnames(Bf) <- c('inf','sup')
 Bf
 ```
 
@@ -136,8 +144,8 @@ or (only for intervals on beta)
 confint(fm, level= 1-0.05/p)[2:3,]  # Bonferroni correction!
 ```
 
-Note: confint() returns the confidence intervals one-at-a-time;
-to have a global level 95% we need to include a correction
+Note: `confint()` returns the confidence intervals one-at-a-time; to have a global level 95% we need to include a correction
+
 Test:
 H0: (beta0+beta2, beta1) == (0,0) vs H1: (beta0+beta2, beta1) != (0,0)
 
@@ -151,8 +159,8 @@ Build the associated confidence region
 Confidence intervals for the mean
 & prediction (new obs)
 Assumption: Eps ~ N(0, sigma^2)
----------------------------------
-Command predict()
+
+Command `predict()`
 
 ```{r }
 Z0.new <- data.frame(speed1=10, speed2=10^2)
@@ -203,7 +211,6 @@ lines(Z0[,1], Pred[,'upr'], lty=3, col='gold', lwd=2)
 ```
 
 Verify assumptions
---------------------
 
 ```{r }
 par(mfrow=c(2,2))
@@ -222,26 +229,24 @@ speed2.kmh2     <- cars$speed^2 * 1.6^2
 ```
 
 Compare:
+
 - Coefficient estimates and corresponding covariance matrices
 - confidence intervals on the coefficients
 - fitted values
 - residuals
 - results of the tests
-  H0: (beta1, beta2) == (0,0) vs H1: (beta1, beta2) != (0,0)
-  H0: (beta0+beta2, beta1) == (0,0) vs H1: (beta0+beta2, beta1) != (0,0)
-_______________________________________________________________________________
-Example 2: Anscombe
----------------------------------
-This example shows some cases for which examining data and 
-residuals is crucial (don't look at R2 only!)
+  - H0: (beta1, beta2) == (0,0) vs H1: (beta1, beta2) != (0,0)
+  - H0: (beta0+beta2, beta1) == (0,0) vs H1: (beta0+beta2, beta1) != (0,0)
+
+## Example 2: Anscombe
+
+This example shows some cases for which examining data and residuals is crucial (don't look at $R^2$ only!)
 
 ```{r }
 anscombe
 ```
 
-Four x-y datasets which have the same traditional statistical 
-properties (mean, variance, correlation, regression line, etc.), 
-yet are quite different.
+Four x-y datasets which have the same traditional statistical  properties (mean, variance, correlation, regression line, etc.),  yet are quite different.
 
 ```{r }
 attach(anscombe)
@@ -275,7 +280,7 @@ lm4 <- lm(y4~ x4)
 summary(lm4)
 ```
 
-same R^2, same coefficient estimate, same residual std error
+same $R^2$, same coefficient estimate, same residual standard error
 
 ```{r }
 par(mfcol=c(2,4))
@@ -303,13 +308,10 @@ abline(lm4)
 plot(x4,residuals(lm4))
 abline(h=0)
 
-dev.off()
 detach(anscombe)
 ```
 
-______________________________________________________________________________________________________________________________________________________________
-Example 3: brain_weight
---------------------------------------------------------
+## Example 3: `brain_weight`
 
 ```{r }
 data <- read.table(here::here('markdowns','lab_10_data','brain_weight.txt'), header=T)
@@ -325,13 +327,14 @@ Y <- brain
 
 detach(data)
 
-plot(X, Y, main='Scatterplot brain weight vs body weight', lwd=2,
+par(mfrow=c(1,2))
+
+plot(X, Y, main='Scatterplot brain weight\nvs body weight', lwd=2,
      xlab='Body weight', ylab='Brain weight')
 
-plot(X, Y, main='Scatterplot brain weight vs body weight', lwd=2,
+plot(X, Y, main='Scatterplot brain weight\nvs body weight', lwd=2,
      xlab='Body weight', ylab='Brain weight',col='white',xlim=c(-1000,8000))
 text(X, Y,dimnames(data)[[1]],cex=1)
-
 
 result <- lm(Y ~ X)
 summary(result)
@@ -342,7 +345,7 @@ plot(X, Y, main='Scatterplot brain weight vs body weight', lwd=2,
 abline(coef[1],coef[2], lwd=2,col='red')
 ```
 
-diagnostics of the residuals
+Diagnostics of the residuals
 
 ```{r }
 par(mfrow=c(2,2))
@@ -350,18 +353,18 @@ plot(result)
 
 shapiro.test(residuals(result))
 
-dev.off()
 ```
 
-exclude outliers?
+`61` and `62` could be outliers, or units to be carefully treated separetely.
 
 ```{r }
-plot(X, Y, main='Scatterplot brain weight vs body weight', lwd=2,
-     xlab='Body weight', ylab='Brain weight',col='white',xlim=c(-1000,8000))
+par(mfrow=c(1,2))
+plot(X, Y, main='Scatterplot brain weight\nvs body weight', lwd=2,
+     xlab='Body weight', ylab='Brain weight', col='white', xlim=c(-1000,8000))
 text(X, Y,dimnames(data)[[1]],cex=1)
 abline(h=3000)
 
-plot(X[which(Y<3000)], Y[which(Y<3000)], main='Scatterplot brain weight vs body weight', lwd=2,
+plot(X[which(Y<3000)], Y[which(Y<3000)], main='Scatterplot brain weight\nvs body weight', lwd=2,
      xlab='Body weight', ylab='Brain weight',col='white',xlim=c(-100,600))
 text(X[which(Y<3000)], Y[which(Y<3000)],dimnames(data)[[1]],cex=1)
 ```
@@ -390,7 +393,6 @@ plot(result.log)
 
 shapiro.test(residuals(result.log))
 
-dev.off()
 ```
 
 confidence intervals and prediction intervals
@@ -423,9 +425,7 @@ matplot(X.new,IC,add=T,type='l',col=c('black','blue','blue'),lwd=2,lty=2)
 matplot(X.new,IP,add=T,type='l',col=c('black','green','green'),lwd=2,lty=2)
 ```
 
-_______________________________________________________________________________
-Example 4: Earthquakes
----------------------------------
+## Example 4: Earthquakes
 
 ```{r }
 Q <- cbind(quakes[,1:2], depth=-quakes[,3]/100)
@@ -442,8 +442,8 @@ axes3d()
 rgl.close()
 ```
 
-Model 1 (all together)
------------------------
+### Model 1 (all together)
+
 Model:
 depth = beta0 + beta1*lat + beta2*long + eps
 
@@ -469,8 +469,7 @@ plot(fit)
 shapiro.test(rstandard(fit))
 ```
 
-Model 2 (dummy variable)
---------------------------
+### Model 2 (dummy variable)
 
 ```{r }
 dummy <- clusterw - 1   # 0 = red
@@ -540,8 +539,8 @@ Reduce the model:
 summary(fitd)
 ```
 
-Model 3 (reduced model)
---------------------------
+### Model 3 (reduced model)
+
 Model:
 depth = beta0 +beta1*lat +beta2*long +beta3*dummy +beta4*dummy*long +eps
 i.e.,
@@ -582,8 +581,6 @@ par(mfrow=c(2,2))
 plot(fitD)
 
 shapiro.test(rstandard(fitD))
-
-dev.off()
 ```
 
 Homework: Fit a linear model with quadratic regressors 
@@ -592,9 +589,9 @@ Perform appropriate statistical tests to answer the following questions:
 Q1: are the quadratic terms needed?
 Q2: is the latitude needed?
 Q3: is the longitude needed?
-_______________________________________________________________________________
-Example 5: simulated data (Bias-variance trade-off)
-------------------------------------
+
+## Example 5: simulated data (Bias-variance trade-off)
+
 generation of training set and test set
 
 ```{r }
@@ -700,16 +697,10 @@ plot(1:16, s2, main='sigma^2', pch=16)
 grid()
 abline(v=3, col='blue', lty=2)
 abline(h=sigma^2, col='blue')
-
-graphics.off()
 ```
 
-_______________________________________________________________________________
-Exercises on linear models
-----------------------------
-_______________________________________________________________________________
-Problem 4 of 6/2/2007
--------------------------
+## Problem 4 of 6/2/2007
+
 The file Pb4.txt reports the number Y (expressed in thousands of units)
 of vehicles registered annually in three countries of the European Union
 (France, Germany and Italy) during a reference period of 10 years.
@@ -797,8 +788,6 @@ par(mfrow=c(2,2))
 plot(fit)
 
 shapiro.test(residuals(fit))
-
-dev.off()
 ```
 
 1. the variable x^2;
@@ -853,9 +842,8 @@ rownames(IP) <- c('Fr','Ger','It')
 IP
 ```
 
-_______________________________________________________________________________
-Problem 4 of 29/6/2011
-------------------------
+## Problem 4 of 29/6/2011
+
 The file people.txt records the tons of waste collected monthly
 in the city of Santander since January 2009 (t = 1) until May 2011
 (t = 29). Assuming a model of the type:
@@ -901,8 +889,6 @@ par(mfrow=c(2,2))
 plot(fit)
 
 shapiro.test(residuals(fit))
-
-dev.off()
 ```
 
 Test: H0: beta_1==0 vs beta_1!=0
@@ -967,9 +953,6 @@ plot(fit2)
 
 shapiro.test(residuals(fit2))
 
-dev.off()
-
-
 coefficients(fit2)
 
 C <- rbind(c(1,(1 - cos(2*pi/12*30))),   # total waste in June 2011 [mese=30]
@@ -990,13 +973,9 @@ lines(mese, fitted(fit))
 lines(mese, fitted(fit2) + 10*mese, col='blue')
 points(c(30,30,30), pred, pch=16)
 legend('bottomright',c('Model 1', 'Constrained model'), lty=1, col=c('black','blue'))
-
-dev.off()
 ```
 
-______________________________________________________________________________________________________________________________________________________________
-Multiple linear regression with qualitative predictors
---------------------------------------------------------
+##Multiple linear regression with qualitative predictors
 
 ```{r }
 data <- read.table(here::here('markdowns','lab_10_data','work.txt'), header=T)
@@ -1071,8 +1050,6 @@ par(mfrow=c(2,2))
 plot(result2)
 
 shapiro.test(residuals(result2))
-
-dev.off()
 ```
 
 Multiple linear regression with two qualitative predictors
@@ -1167,7 +1144,5 @@ par(mfrow=c(2,2))
 plot(result5)
 
 shapiro.test(residuals(result5))
-
-dev.off()
 ```
 
