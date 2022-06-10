@@ -1,14 +1,14 @@
 ---
-title: ":("
+title: "Title"
 output:
-	html_document:
-		toc: true
-		toc_float: true
-		number_sections: true
-	pdf_document:
-		toc: true
-		toc_depth: 3
-		number_section: true
+    html_document:
+        toc: true
+        toc_float: true
+        number_sections: true
+    pdf_document:
+        toc: true
+        toc_depth: 3
+        number_section: true
 ---
 # Chunk options: https://rmarkdown.rstudio.com/lesson-3.html#:~:text=include%20%3D%20FALSE%20prevents%20code%20and,useful%20way%20to%20embed%20figures.
 
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(fig.path = path_images,
                       echo = TRUE,
 					  dev = "png",
 					  dpi = 300,
-					  cache=TRUE)
+					  cache = TRUE)
 ```
 
 ```{r child=here::here("markdowns","lab_1.rmd")}
