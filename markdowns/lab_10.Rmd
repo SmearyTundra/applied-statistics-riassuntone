@@ -51,7 +51,7 @@ Assumptions:
 
 **Estimation on Parameters**
 
-Assumptions: $\mathbb{E}(\varepsilon)=0$ and  $\mathrm{Var}(\varepsilon)=\sigma^2$.
+Assumptions: $\mathbb{E}(\varepsilon)=0$ and $\mathrm{Var}(\varepsilon)=\sigma^2$.
 
 ```{r }
 help(lm)
@@ -101,7 +101,7 @@ linearHypothesis(fm, rbind(c(0,1,0),
                            c(0,0,1)), c(0,0)) 
 summary(fm)
 
-p <- 2  # number of tested coefficients
+p <- length(fm$coefficients)-1  # (2) number of tested coefficients
 r <- 2  # number of regressors
 ```
 
@@ -144,13 +144,14 @@ or (only for intervals on beta)
 confint(fm, level= 1-0.05/p)[2:3,]  # Bonferroni correction!
 ```
 
-Note: `confint()` returns the confidence intervals one-at-a-time; to have a global level 95% we need to include a correction
+Note: `confint()` returns the confidence intervals one-at-a-time; to have a global level 95% we need to include a correction.
 
 Test:
 H0: (beta0+beta2, beta1) == (0,0) vs H1: (beta0+beta2, beta1) != (0,0)
 
 ```{r }
-C <- rbind(c(1,0,1), c(0,1,0))
+C <- rbind(c(1,0,1), # beta0+beta2
+           c(0,1,0)) # beta1
 linearHypothesis(fm, C, c(0,0))
 ```
 
@@ -166,14 +167,14 @@ Command `predict()`
 Z0.new <- data.frame(speed1=10, speed2=10^2)
 ```
 
-Conf. int. for the mean
+Confidence interval for the mean
 
 ```{r }
 Conf <- predict(fm, Z0.new, interval='confidence', level=1-0.05)  
 Conf
 ```
 
-Pred. int. for a new obs
+Prediction interval for a new observation (expected to be larger than the previous)
 
 ```{r }
 Pred <- predict(fm, Z0.new, interval='prediction', level=1-0.05)  
@@ -192,8 +193,7 @@ points(10,Pred[2], pch='-', col='gold', lwd=2)
 points(10,Pred[3], pch='-', col='gold', lwd=2)
 ```
 
-We can repeat these for values of speed between 0 and 30
-(point-wise intervals!)
+We can repeat these for values of speed between 0 and 30 (point-wise intervals!)
 
 ```{r }
 Z0   <- data.frame(cbind(speed1=seq(0, 30, length=100), 
@@ -252,35 +252,35 @@ Four x-y datasets which have the same traditional statistical  properties (mean,
 attach(anscombe)
 ```
 
-dataset 1
+Dataset 1
 
 ```{r }
 lm1 <- lm(y1~ x1)
 summary(lm1)
 ```
 
-dataset 2
+Dataset 2
 
 ```{r }
 lm2 <- lm(y2~ x2)
 summary(lm2)
 ```
 
-dataset 3
+Dataset 3
 
 ```{r }
 lm3 <- lm(y3~ x3)
 summary(lm3)
 ```
 
-dataset 4
+Dataset 4
 
 ```{r }
 lm4 <- lm(y4~ x4)
 summary(lm4)
 ```
 
-same $R^2$, same coefficient estimate, same residual standard error
+Same $R^2$, same coefficient estimate, same residual standard error, however:
 
 ```{r }
 par(mfcol=c(2,4))
@@ -352,10 +352,9 @@ par(mfrow=c(2,2))
 plot(result)
 
 shapiro.test(residuals(result))
-
 ```
 
-`61` and `62` could be outliers, or units to be carefully treated separetely.
+`61` and `62` could be outliers, or units to be carefully treated separately.
 
 ```{r }
 par(mfrow=c(1,2))
@@ -369,41 +368,42 @@ plot(X[which(Y<3000)], Y[which(Y<3000)], main='Scatterplot brain weight\nvs body
 text(X[which(Y<3000)], Y[which(Y<3000)],dimnames(data)[[1]],cex=1)
 ```
 
-logarithmic transformation of the data!
+Solution: logarithmic transformation of the data!
 
 ```{r }
 log.X <- log(X)
 log.Y <- log(Y)
 
-plot(log.X, log.Y, main='Scatterplot ln(Brain weight) vs ln(Body weight)', lwd=2,
-     xlab='ln(Body weight)', ylab='ln(Brain weight)')
-
 result.log <- lm(log.Y ~ log.X)
 summary(result.log)
+
+par(mfrow=c(1,1))
+plot(log.X, log.Y, main='Scatterplot ln(Brain weight)\nvs ln(Body weight)', lwd=2,
+     xlab='ln(Body weight)', ylab='ln(Brain weight)')
 
 coef.log= result.log$coef
 abline(coef.log[1],coef.log[2], lwd=2,col='red')
 ```
 
-diagnostics of the residuals
+Diagnostics of the residuals
 
 ```{r }
 par(mfrow=c(2,2))
 plot(result.log)
 
 shapiro.test(residuals(result.log))
-
 ```
 
-confidence intervals and prediction intervals
+Confidence intervals and prediction intervals
 
 ```{r }
-plot(log.X, log.Y, main='Scatterplot ln(Brain weight) vs ln(Body weight)', lwd=2,
-     xlab='ln(Body weight)', ylab='ln(Brain weight)')
+par(mfrow=c(1,1))
+plot(log.X, log.Y, main='Scatterplot ln(Brain weight) vs ln(Body weight)',
+     lwd=2, xlab='ln(Body weight)', ylab='ln(Brain weight)')
 
 X.new.log <- data.frame(log.X = seq(min(log.X), max(log.X), len=100))
 
-IC.log <-predict(result.log ,X.new.log,interval="confidence",level=0.95)
+IC.log <- predict(result.log, X.new.log, interval="confidence", level=0.95)
 matplot(X.new.log,IC.log,add=T,type='l',col=c('black','blue','blue'),lwd=2,lty=2)
 
 IP.log <-predict(result.log ,X.new.log,interval="prediction",level=0.95)
@@ -413,7 +413,7 @@ legend('topleft', legend=c('regression line','confidence intervals','prediction 
        col=c('black','blue','green'), lwd=2, cex=0.85)
 ```
 
-plot on the original data
+Plot on the original data
 
 ```{r }
 plot(X, Y, main='Scatterplot Brain weight vs Body weight', lwd=2,
@@ -428,29 +428,30 @@ matplot(X.new,IP,add=T,type='l',col=c('black','green','green'),lwd=2,lty=2)
 ## Example 4: Earthquakes
 
 ```{r }
+# keep latitude and longitude and transform depth
 Q <- cbind(quakes[,1:2], depth=-quakes[,3]/100)
 
 d <- dist(Q)
-clusterw <- cutree(hclust(d, method='ward.D2'), 2)
+clusterw <- cutree(hclust(d, method='ward.D2'), 2) # 2 clusters
 
-open3d()
 par3d(windowRect=c(680,40,1350,720))
 points3d(x=Q$lat, y=Q$long, z=Q$depth, size=4, col=clusterw+1, aspect = T)
 box3d()
 axes3d()
-
-rgl.close()
 ```
 
 ### Model 1 (all together)
 
 Model:
-depth = beta0 + beta1*lat + beta2*long + eps
+$$
+\texttt{depth} = \beta_0 + \beta_1\cdot\texttt{lat} + \beta_2\cdot\texttt{long} + \varepsilon
+$$
 
 ```{r }
-fit  <- lm(depth ~ lat + long, data=Q)
+fit <- lm(depth ~ lat + long, data=Q)
 summary(fit)
 
+# 3D plot of the fitted plane
 open3d()
 par3d(windowRect=c(680,40,1350,720))
 points3d(x=Q$lat, y=Q$long, z=Q$depth, size=4, col=clusterw+1, aspect = T)
@@ -460,7 +461,6 @@ points3d(x=Q$lat, y=Q$long, z=fitted(fit), size=4, col = 'blue')
 surface3d(range(Q$lat), range(Q$long), 
           matrix(predict(fit, expand.grid(lat=range(Q$lat), long=range(Q$long))),2,2),
           alpha = 0.5)
-
 rgl.close()
 
 par(mfrow=c(2,2))
@@ -480,8 +480,9 @@ head(Qd)
 ```
 
 Model:
-depth = beta0       + beta1*lat       + beta2*long        +
-      + beta3*dummy + beta4*dummy*lat + beta5*dummy*long  + eps
+$$
+\texttt{depth} = \beta_0 + \beta_1\cdot\texttt{lat} + \beta_2\cdot\texttt{long} + \beta_3\cdot\texttt{dummy} + \beta_4\cdot\texttt{dummy}\cdot\texttt{lat} + \beta_5\cdot\texttt{dummy}\cdot\texttt{long} + \varepsilon
+$$
 i.e.,
 depth = B0[g] + B1[g]*lat + B2[g]*long + eps
 with B0[g]=beta0       if the unit is in group s.t. dummy=0 (red)
@@ -525,13 +526,19 @@ plot(fitd)
 shapiro.test(rstandard(fitd))
 ```
 
-test: are the two planes needed?
+Test: are the two planes needed?
 
 ```{r }
-A <- rbind(c(0,0,0,1,0,0), c(0,0,0,0,1,0), c(0,0,0,0,0,1))
+A <- rbind(c(0,0,0,1,0,0),
+           c(0,0,0,0,1,0),
+           c(0,0,0,0,0,1))
 b <- c(0,0,0)
 linearHypothesis(fitd, A, b)
 ```
+
+We have evidence that they are needed.
+
+### Model 3 (reduced model)
 
 Reduce the model:
 
@@ -539,10 +546,10 @@ Reduce the model:
 summary(fitd)
 ```
 
-### Model 3 (reduced model)
-
 Model:
-depth = beta0 +beta1*lat +beta2*long +beta3*dummy +beta4*dummy*long +eps
+$$
+\texttt{depth} = \beta_0 + \beta_1\cdot\texttt{lat} + \beta_2\cdot\texttt{long} + \beta_3\cdot\texttt{dummy} + \beta_4\cdot\texttt{dummy}\cdot\texttt{long} + \varepsilon
+$$
 i.e.,
 depth = B0[g] + B1*lat + B2[g]*long
 with B0[g]=beta0       if the unit is in group s.t. dummy=0 (red)
@@ -570,7 +577,6 @@ surface3d(range(Q$lat), range(Q$long),
 surface3d(range(Q$lat), range(Q$long), 
           matrix(predict(fitD, expand.grid(lat = range(Q$lat), long = range(Q$long), dummy=c(0,0))),2,2),
           alpha = 0.5, col='red')
-
 rgl.close()
 ```
 
@@ -583,32 +589,43 @@ plot(fitD)
 shapiro.test(rstandard(fitD))
 ```
 
-Homework: Fit a linear model with quadratic regressors 
-(lat, long, lat^2, long^2, lat:long)
+Homework: Fit a linear model with quadratic regressors (`lat`, `long`, `lat^2`, `long^2`, `lat:long`)
+
+```{r}
+Qd$lat2 <- Qd$lat^2
+Qd$long2 <- Qd$long^2
+fitHomework <- lm(depth ~ lat + long + lat2 + long2 + lat:long, data=Qd)
+summary(fitHomework)
+par(mfrow=c(2,2))
+plot(fitHomework)
+shapiro.test(rstandard(fitHomework))
+```
+
 Perform appropriate statistical tests to answer the following questions:
-Q1: are the quadratic terms needed?
-Q2: is the latitude needed?
-Q3: is the longitude needed?
+
+- Q1: are the quadratic terms needed? Yes, they are significant.
+- Q2: is the latitude needed? Yes, it is significant.
+- Q3: is the longitude needed? Yes, it is significant.
 
 ## Example 5: simulated data (Bias-variance trade-off)
 
-generation of training set and test set
+Generation of training set and test set
 
 ```{r }
 set.seed(1)
 ```
 
-true model: regressors x, x^2, x^3; coefficients (1,1,1,-1)
+**True** model: regressors `x`, `x^2`, `x^3`; coefficients `(1,1,1,-1)`
 
 ```{r }
 f <- function(x){1+x+x^2-x^3}
 sigma <- 0.25
 x <- seq(-1, 1.5, length = 21)
-y <- f(x) + rnorm(21, sd = sigma)
+y     <- f(x) + rnorm(21, sd = sigma)
 y.new <- f(x) + rnorm(21, sd = sigma)
 ```
 
-build design matrix
+Build design matrix
 
 ```{r }
 data <- NULL
@@ -620,7 +637,7 @@ head(data)
 dim(data)
 ```
 
-grid to plot
+Grid to plot
 
 ```{r }
 data.plot <- NULL
@@ -631,15 +648,16 @@ colnames(data.plot) <- c(paste('x', 0:20, sep=''))
 data.plot <- data.frame(data.plot)
 ```
 
-plot of the training set, test set and "true" mean curve
+Plot of the training set, test set and "true" mean curve
 
 ```{r }
+par(mfrow=c(1,1))
 plot(x, y, pch=20)                            # training set
 points(x, y.new, col='red')                   # test set
 lines(x.plot, f(x.plot), col='blue', lty=2)   # true mean
 ```
 
-regression with polynomials of increasing order
+Regression with polynomials of increasing order
 
 ```{r }
 SSres <- SSres.new <- s2 <- b <- R2 <- R2.adj <- NULL
@@ -665,7 +683,7 @@ for(p in 1:16)
 }
 ```
 
-compare some indices
+Compare some indices
 
 ```{r }
 par(mfrow=c(2,2))
@@ -679,8 +697,8 @@ plot(1:16, R2.adj, pch=16)
 abline(v=3, col='blue', lty=2)
 ```
 
-compare parameter estimates
-true model: regressors x, x^2, x^2; coefficients (1,1,1,-1)
+Compare parameter estimates
+True model: regressors x, x^2, x^2; coefficients (1,1,1,-1)
 
 ```{r }
 b.true <- c(1,1,1,-1, rep(0,8))
@@ -701,52 +719,51 @@ abline(h=sigma^2, col='blue')
 
 ## Problem 4 of 6/2/2007
 
-The file Pb4.txt reports the number Y (expressed in thousands of units)
-of vehicles registered annually in three countries of the European Union
-(France, Germany and Italy) during a reference period of 10 years.
-Recent economic models describe the behavior of this variable according
-to the model:
-Y | (X = x, G = g) = beta0.g + beta1.g * x^2 + eps
-with eps ~ N (0, sigma^2), x = 1, 2, ... , 10 (year) and
-g = France, Germany, Italy (EU country).
-(a) With the least squares method, estimate the 7 parameters of the model.
-(b) Using appropriate statistical tests, state if you deem necessary to
-    include into the model:
-    1. the variable x^2;
-    2. the variable G;
-    3. the effect of the variable G on the coefficient that multiplies
-       the regressor x^2;
-    4. the effect of the variable G on the intercept.
-(c) Once identified the "best model", build three prediction intervals
-    for the number of vehicles registered in the three countries 
-    during the eleventh year, so that the three new observations
-    will fall simultaneously within the respective ranges with 95%
-    of probability.
+The file `Pb4.txt` reports the number `Y` (expressed in thousands of units) of vehicles registered annually in three countries of the European Union (France, Germany and Italy) during a reference period of 10 years. Recent economic models describe the behavior of this variable according to the model:
+$$
+Y \mid (X = x, G = g) = \beta_{0g} + \beta_{1g} \cdot x^2 + \varepsilon
+$$
+with $\varepsilon\sim N(0, \sigma^2)$, $x = 1, 2, ... , 10$ (year) and
+$g =$ France, Germany, Italy (EU country).
+
+a. With the least squares method, estimate the $7$ parameters of the model.
+b. Using appropriate statistical tests, state if you deem necessary to include into the model:
+    1. the variable $x^2$;
+    2. the variable $G$;
+    3. the effect of the variable $G$ on the coefficient that multiplies the regressor $x^2$;
+    4. the effect of the variable $G$ on the intercept.
+c. Once identified the "best model", build three prediction intervals for the number of vehicles registered in the three countries during the 11th year, so that the 3 new observations will fall simultaneously within the respective ranges with 95% of probability.
 
 ```{r }
 pb4  <- read.table(here::here('markdowns','lab_10_data','Pb4.txt'))
 pb4
 
-matplot(pb4, type='l',lwd=2, xlab='Year', ylab='Vehicles')
-legend("topleft",c("France", "Germany", "Italy"),lty=1:3,col=1:3)
+par(mfrow=c(1,1))
+matplot(pb4, type='l', lwd=2, xlab='Year', ylab='Vehicles')
+legend("topleft",c("France", "Germany", "Italy"), lty=1:3, col=1:3)
 ```
 
-question (a)
+Question a.
+
 We first build the design matrix and the vector of the responses
 
 ```{r }
 Year <- rep(1:10,3)
 Year
 
-Reg <- c(pb4[,1], pb4[,2], pb4[,3])
+Reg <- c(pb4[,1],
+         pb4[,2],
+         pb4[,3])
 Reg
 ```
 
-Model: Reg = beta0.g + beta1.g*Year^2 + eps
-with g=France,Germany,Italy; E[eps]=0, Var(eps)=sigma^2
-We need to build appropriate dummy variables to account for the
-levels of the categorical variable g=France,Germany,Italy (3 levels)
-g groups => g-1 dummy variables (3 groups => 2 dummy variables)
+Model:
+$$
+\texttt{Reg} = \beta_{0g} + \beta_{1g}\cdot\texttt{Year}^2 + \varepsilon
+$$
+with $g =$ France, Germany, Italy; $\mathbb{E}[\varepsilon]=0, \mathrm{Var}(\varepsilon) = \sigma^2$
+We need to build appropriate `dummy` variables to account for the levels of the categorical variable `g`.
+`g` groups => `g-1` dummy variables (3 groups => 2 dummy variables).
 
 ```{r }
 dFr <- rep(c(1,0), c(10,20))      # dFr = 1 if France,  0 otherwise
@@ -756,38 +773,44 @@ dGer
 ```
 
 Equivalent Model:
-Reg = b.0+b.1*dFr+b.2*dGer +b.3*Year^2+b.4*dFr*Year^2+b.5*dGer*Year^2 + eps
-Indeed:
-beta0.It=b.0;      beta1.It=b.3;
-beta0.Fr=b.0+b.1;  beta1.Fr=b.3+b.4;
-beta0.Ger=b.0+b.2; beta1.Ger=b.3+b.5
 
+$$
+\texttt{Reg} = b_0 + b_1\cdot \texttt{dFr} + b_2\cdot \texttt{dGer} + b_3\cdot \texttt{Year}^2 + b_4\cdot \texttt{dFr}\cdot \texttt{Year}^2 + b_5\cdot \texttt{dGer}\cdot \texttt{Year}^2 + \varepsilon
+$$
+Indeed:
+$$
+\beta_{0It}=b_0    \quad    \beta_{1It}=b_3 \\
+\beta_{0Fr}=b_0 + b_1    \quad    \beta_{1Fr}=b_3 + b_4; \\
+\beta_{0Ger}=b_0 + b_2    \quad    \beta_{1Ger}=b_3 + b_5
+$$
 ```{r }
 dati <- data.frame(Reg   = Reg,
                    Year2 = Year^2,
-                   dFr   = rep(c(1,0), c(10,20)),      # dummy for France
-                   dGer  = rep(c(0,1,0), c(10,10,10))) # dummy for Germany
+                   dFr   = dFr,    # dummy for France
+                   dGer  = dGer)   # dummy for Germany
 dati
 
 fit <- lm(Reg ~ dFr + dGer + Year2 + Year2:dFr + Year2:dGer, data=dati)
 ```
 
 Equivalent syntax:
+```
 fit <- lm(Reg ~ dFr + dGer + I(Year^2) + I(Year^2*dFr) + I(Year^2*dGer),  
           data=data.frame(Reg=Reg, Year=Year, dFr=rep(c(1,0), c(10,20)), 
                           dGer = rep(c(0,1,0), c(10,10,10))))
+```
 
 ```{r }
 summary(fit)
 ```
 
-question (b)
+Question b.
 
 ```{r }
 par(mfrow=c(2,2))
 plot(fit)
 
-shapiro.test(residuals(fit))
+shapiro.test(residuals(fit)) # normality assumptions satisfied
 ```
 
 1. the variable x^2;
@@ -800,6 +823,8 @@ linearHypothesis(fit,
                  c(0,0,0))
 ```
 
+It is significative.
+
 2. the variable G;
 
 ```{r }
@@ -811,8 +836,9 @@ linearHypothesis(fit,
                  c(0,0,0,0))
 ```
 
-    3. the effect of the variable G onto the coefficient that multiplies
-       the regressor x^2;
+It is significative.
+
+3. the effect of the variable G onto the coefficient that multiplies the regressor x^2;
 
 ```{r }
 linearHypothesis(fit,
@@ -821,7 +847,9 @@ linearHypothesis(fit,
                  c(0,0))
 ```
 
-    4. the effect of the variable G on the intercept.
+It is significative.
+
+4. the effect of the variable G on the intercept.
 
 ```{r }
 linearHypothesis(fit,
@@ -830,7 +858,9 @@ linearHypothesis(fit,
                  c(0,0))
 ```
 
-question (c)
+It is not significative.
+
+Question c.
 
 ```{r }
 fit2 <- lm(Reg ~ Year2 + Year2:dFr + Year2:dGer, data=dati)
@@ -844,47 +874,41 @@ IP
 
 ## Problem 4 of 29/6/2011
 
-The file people.txt records the tons of waste collected monthly
-in the city of Santander since January 2009 (t = 1) until May 2011
-(t = 29). Assuming a model of the type:
-  Waste = A + B * t  + C * (1-cos(2pi / 12 * t)) + eps
-with eps ~ N(0, sigma^2) and identifying the contribution of the residents
-with the first two factors, and that of the tourists with the third
-addendum, answer the following questions.
-a) Estimate the parameters of the model.
-b) On the basis of the model (a), is there statistical evidence of an
-   increase attributable to residents?
-c) On the basis of the model (a), is there statistical evidence of a
-   significant contribution by tourists?
-d) The University of Cantabria considered that the GROWTH attributable to
-   residents is quantifiable in an increase of 10 tons per month.
-   Can you deny this statement?
-e) Based on the test (b), (c) and (d) propose a possible reduced and/or 
-   constrained model and estimate its parameters.
-f) On the basis of model (e), provide three pointwise forecasts for the
-   waste that will be collected in June 2011, for the waste that will be
-   collected in June 2011 due to residents and that which will be collected
-   in June 2011 due to the tourists.
+The file `people.txt` records the tons of waste collected monthly in the city of Santander since January 2009 (t = 1) until May 2011 (t = 29). Assuming a model of the type:
+$$
+\texttt{Waste} = A + B \cdot t  + C \cdot (1 - \cos(2\pi / 12 \cdot t)) + \varepsilon
+$$
+with $\varepsilon \sim N(0, \sigma^2)$ and identifying the contribution of the residents with the first two factors, and that of the tourists with the third addendum, answer the following questions.
+
+a. Estimate the parameters of the model.
+b. On the basis of the model a), is there statistical evidence of an increase attributable to residents?
+c. On the basis of the model a), is there statistical evidence of a significant contribution by tourists?
+d. The University of Cantabria considered that the GROWTH attributable to residents is quantifiable in an increase of 10 tons per month. Can you deny this statement?
+e. Based on the test b), c) and d) propose a possible reduced and/or constrained model and estimate its parameters.
+f. On the basis of model e), provide three pointwise forecasts for the waste that will be collected in June 2011, for the waste that will be collected in June 2011 due to residents and that which will be collected in June 2011 due to the tourists.
 
 ```{r }
 people <- read.table(here::here('markdowns','lab_10_data','people.txt'), header=T)
 people
+```
 
-plot(people,pch=20)
+Question a.
 
+```{r }
 attach(people)
 
-
-# question a)
-
-fit <- lm(rifiuti ~ mese + I(1 - cos(2*pi/12*mese)))
+fit <- lm(rifiuti ~ mese + I(1 - cos(2*pi/12*mese)), data=people)
 summary(fit)
 
+par(mfrow=c(1,1))
+plot(people,pch=20)
 t <- seq(from=0,to=30,length=100)
-points(t,fit$coeff[1]+fit$coeff[2]*t+fit$coeff[3]*(1-cos(2*pi/12*t)),type='l')
+points(t, fit$coeff[1] + fit$coeff[2]*t + fit$coeff[3]*(1-cos(2*pi/12*t)), type='l')
+```
 
-# question b)
+Question b.
 
+```{r }
 par(mfrow=c(2,2))
 plot(fit)
 
@@ -903,7 +927,10 @@ or
 linearHypothesis(fit,rbind(c(0,1,0)),0)
 ```
 
-question c)
+We have evidence that the coefficient is not zero, thus the residents have an effect.
+
+Question c.
+
 Test: H0: beta_2==0 vs beta_2!=0
 
 ```{r }
@@ -916,13 +943,17 @@ or
 linearHypothesis(fit,rbind(c(0,0,1)),0)
 ```
 
-question d)
+We have evidence that the coefficient is not zero, thus the tourists have an effect.
+
+Question d.
 
 ```{r }
 linearHypothesis(fit,rbind(c(0,1,0)),10)
 ```
 
-or (from the summary)
+We don't reject, thus we have evidence that the increase is 10 tons per month (mind the unit of measure).
+
+Or (from the summary)
 
 ```{r }
 summary(fit)
@@ -932,20 +963,21 @@ pval <- 2*(1-pt(t,29-(2+1)))
 pval
 ```
 
-question e)
+Question e.
 
 ```{r }
 rifiuti.vinc <- rifiuti - 10*mese
 
 fit2 <- lm(rifiuti.vinc ~ I(1 - cos(2*pi/12*mese)))
 summary(fit2)
+
+par(mfrow=c(1,1))
+plot(mese, rifiuti.vinc, pch=20)
+t <- seq(from=0, to=30, length=100)
+points(t, fit2$coeff[1] + fit2$coeff[2]*(1-cos(2*pi/12*t)), type='l')
 ```
 
-question f)
-f) On the basis of model (e), provide three pointwise forecasts for the
-   waste that will be collected in June 2011, for the waste that will be
-   collected in June 2011 due to residents and that which will be collected
-   in June 2011 due to the tourists.
+Question f.
 
 ```{r }
 par(mfrow=c(2,2))
@@ -960,22 +992,20 @@ C <- rbind(c(1,(1 - cos(2*pi/12*30))),   # total waste in June 2011 [mese=30]
            c(0,(1 - cos(2*pi/12*30))))   # waste due to tourists in June 2011
 C
 
-pred <- C %*% coefficients(fit2) + c(10*30, 10*30, 0)  
-```
-
-pred=C%*%beta.hat[fit.mod.constrained] + 10*mese[constrained part]
-
-```{r }
+pred <- C %*% coefficients(fit2) + c(10*30, 10*30, 0)
+#pred = C %*% beta.hat[fit.mod.constrained] + 10*mese[constrained part]
 pred
 
+par(mfrow=c(1,1))
 plot(people, xlim=c(1,30), ylim=c(900,1400))
 lines(mese, fitted(fit))
 lines(mese, fitted(fit2) + 10*mese, col='blue')
 points(c(30,30,30), pred, pch=16)
 legend('bottomright',c('Model 1', 'Constrained model'), lty=1, col=c('black','blue'))
+detach(people)
 ```
 
-##Multiple linear regression with qualitative predictors
+## Multiple linear regression with qualitative predictors
 
 ```{r }
 data <- read.table(here::here('markdowns','lab_10_data','work.txt'), header=T)
@@ -995,17 +1025,16 @@ C2 <- Race
 
 detach(data)
 
-plot(X, Y, main='Scatterplot di Y vs X', lwd=2, 
-     xlab='Years of Service', ylab='Average Score')
-
 result <- lm(Y ~ X)
 summary(result)
 
+plot(X, Y, main='Scatterplot of Y vs X',
+     xlab='Years of Service', ylab='Average Score')
 coef <- result$coef
 abline(coef[1],coef[2],lwd=2)
 ```
 
-differences between males and females:
+Differences between males and females:
 
 ```{r }
 col <- rep('blue',n)
@@ -1013,7 +1042,7 @@ females <- which(C1=='Female')
 males <- which(C1=='Male')
 col[females] <- 'red'
 
-plot(X, Y, main='Scatterplot di Y vs X', lwd=2, 
+plot(X, Y, main='Scatterplot di Y vs X',
      xlab='Years of Service', ylab='Average Score', col = col)
 ```
 
@@ -1021,7 +1050,7 @@ Multiple linear regression with one qualitative predictor
 
 ```{r }
 C1.new <- rep(0,n)
-C1.new[males] <- 1
+C1.new[males] <- 1 # 1 if male, 0 if female
 
 result1 <- lm(Y ~  X + C1.new + X:C1.new)
 summary(result1)
@@ -1030,30 +1059,32 @@ result2 <- lm(Y ~ C1.new + X)
 summary(result2)
 ```
 
-interpretation of the model:
-modell for females: Y = 7.035 + 0.097 X
-modell males:       Y = 7.035 - 2.59 + 0.097 X = 4.44 + 0.097 X
+Interpretation of the model:
+
+- model for females: Y = 7.035 + 0.097 X
+- model males:       Y = 7.035 - 2.59 + 0.097 X = 4.44 + 0.097 X
 
 ```{r }
-plot(X, Y, main='Scatterplot of Y vs X', lwd=2, 
+plot(X, Y, main='Scatterplot of Y vs X', 
      xlab='Years of Service', ylab='Average Score', col = col)
 
 coef <- result2$coef
-abline(coef[1],coef[3],lwd=2,col='indianred')
-abline(coef[1]+coef[2],coef[3],lwd=2,col='cornflowerblue')
+abline(coef[1], coef[3], lwd=2, col='indianred')
+abline(coef[1]+coef[2], coef[3], lwd=2, col='cornflowerblue')
 ```
 
-diagnostics of the residuals
+Diagnostics of the residuals
 
 ```{r }
 par(mfrow=c(2,2))
 plot(result2)
 
-shapiro.test(residuals(result2))
+shapiro.test(residuals(result2)) # normality assumption satisfied
 ```
 
 Multiple linear regression with two qualitative predictors
-qualitative predictors:
+
+Qualitative predictors:
 
 ```{r }
 C1
@@ -1061,39 +1092,39 @@ C2
 
 C1.new 
 
-notwhite <- which(C2=='Nonwhite')
 white <- which(C2=='White')
 C2.new <- rep(0,n)
-C2.new[notwhite] <- 0
 C2.new[white] <- 1
+C2.new
 ```
 
 4 cases:
-females white
+
+Females white
 
 ```{r }
 FB <- which(C1.new==0 & C2.new==1)
 ```
 
-females not white
+Females not white
 
 ```{r }
 FNB <- which(C1.new==0 & C2.new==0)
 ```
 
-males white
+Males white
 
 ```{r }
 MB <- which(C1.new==1 & C2.new==1)
 ```
 
-males not white
+Males not white
 
 ```{r }
 MNB <- which(C1.new==1 & C2.new==0)
 ```
 
-colors for the plot
+Colors for the plot
 
 ```{r }
 col <- rep(NA,n)
@@ -1103,7 +1134,7 @@ col[MB] <- 'light blue'
 col[MNB] <- 'blue'
 ```
 
-shape of the dots for the plot
+Shape of the dots for the plot
 
 ```{r }
 shape <- rep(0,n)
@@ -1112,23 +1143,21 @@ shape[FNB] <- 22
 shape[MB] <- 23
 shape[MNB] <- 24
 
-plot(X, Y, main='Scatterplot Y vs X', lwd=2,
+par(mfrow=c(1,1))
+plot(X, Y, main='Scatterplot of Y vs X', lwd=2,
      xlab='Years of Service', ylab='Average Score', col = col, pch = shape)
 
 result3 <- lm(Y ~ X + C1.new + C2.new + X:C1.new + X:C2.new)
-result3
 summary(result3)
 
 result4 <- lm(Y ~ X + C1.new + C2.new + X:C2.new)
-result4
 summary(result4)
 
 result5 <- lm(Y ~ X + C1.new + C2.new)
-result5
 summary(result5)
 
-plot(X, Y, main='Scatterplot of Y vs X', lwd=2, 
-     xlab='Years of Service', ylab='Average Score', col = col)
+plot(X, Y, main='Scatterplot of Y vs X', lwd=2,
+     xlab='Years of Service', ylab='Average Score', col = col, pch = shape)
 
 coef <- result5$coef
 abline(coef[1],coef[2],lwd=2,col='indianred') # female, nonwhite
@@ -1137,12 +1166,11 @@ abline(coef[1]+coef[4],coef[2],lwd=2,col='pink2') # female, white
 abline(coef[1]+coef[3]+coef[4],coef[2],lwd=2,col='lightblue3') # male, white
 ```
 
-diagnostics of the residuals
+Diagnostics of the residuals
 
 ```{r }
 par(mfrow=c(2,2))
 plot(result5)
 
-shapiro.test(residuals(result5))
+shapiro.test(residuals(result5)) # normality assumption satisfied
 ```
-
