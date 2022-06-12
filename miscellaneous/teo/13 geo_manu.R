@@ -16,12 +16,13 @@ library(gstat)        ## Geostatistics
 v.f <- function(x, ...){100-cov.spatial(x, ...)}
 v.f.est<-function(x,C0, ...){C0-cov.spatial(x, ...)}
 
-coordinates(hotels) <- c('x','y')
+coordinates(hotels) <- c('x','y') # set the coordinates correctly
 
 # bubble plot(obj,zcol,...)
 # key.space=location of the key
-x11()
 bubble(hotels,'price',do.log=TRUE,key.space='bottom')
+
+
 
 hist(hotels$price, breaks=16, col="grey", main='Histogram of price', prob = TRUE, xlab = 'Zn')
 # highly skewed, transform to the log
@@ -30,12 +31,22 @@ hist(hotels$price, breaks=16, col="grey", main='Histogram of price', prob = TRUE
 # scatterplot of log(zinc) with respect to distance from the river 
 xyplot(price ~ distance, as.data.frame(hotels))
 
-v.no=variogram(price ~ 1 , data=hotels)
-plot(v.no,pch=19)
 
 v.t=variogram(price ~ winter + winter:distance , data=hotels)
 plot(v.t,pch=19)
 
+
+
+
+
+# list variogram models
+vgm()
+# "Exp" "Sph" are linear
+#both spherical and exponential model have a linear behavior near the origin but exponential model has a faster growth than the spherical one
+
+
+# sample variogram (binned estimator) + plot
+v.no=variogram(price ~ 1 , data=hotels)
 v.fit1 <- fit.variogram(v.no, vgm(4000, "Sph", 500,500))    ###vgm(sill, 'type', range, nugget)
 plot(v.no, v.fit1, pch = 3)
 v.fit1
@@ -44,10 +55,13 @@ v.fit2 <- fit.variogram(v.t, vgm(1000, "Sph", 500,500))
 plot(v.t, v.fit2, pch = 3)
 v.fit2
 
+# OK
 g.no <- gstat(formula = price ~ 1 , data = hotels, model = v.fit1)
-
+# UK
 g.t <- gstat(formula = price ~ winter + winter:distance , data = hotels, model = v.fit2)
 
+# predict hotels[1,]
+# Estimate the mean: use the argument 'BLUE=TRUE' otherwise the observation
 predict(g.no, hotels[1,], BLUE = TRUE)$var1.pred    
 
 ##### PREDICTION FOR GROUP 1  
