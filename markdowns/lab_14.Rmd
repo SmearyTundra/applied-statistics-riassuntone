@@ -1,12 +1,20 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
 
-```{r }
-# CHAPTER 1 SMOOTHING
+# LAB 14: Functional Data Analysis
+
+## Smoothing
+
+```{r echo=FALSE}
+rm(list = ls())
 ```
 
-Partly based on Ramsay, Hooker, Graves, 
-"Functional Data Analysis with R and Matlab", Springer, 2009
-Part of the codes are courtesy of Prof. Laura Maria Sangalli
-Upload noisy data
+Partly based on Ramsay, Hooker, Graves, "Functional Data Analysis with R and MATLAB", Springer, 2009. Part of the codes are courtesy of Prof. Laura Maria Sangalli.
+
+Upload noisy data (with noise).
 
 ```{r }
 noisycurve <- read.table(here::here('markdowns','lab_14_data',"noisycurvebis.txt"), header=TRUE)
@@ -18,10 +26,10 @@ abscissa <- noisycurve$Abscissa
 NT <- length(abscissa) # number of locations of observations
 
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
-plot(abscissa, Xobs0, xlab="t", ylab="observed data", type="l")
 ```
 
-Upload true data (without noise)
+Upload true data (without noise).
+
 X0 contains the values of the true curve
 X1 contains the values of the true first derivative
 X2 contains the values of the true second derivative
@@ -30,19 +38,15 @@ X2 contains the values of the true second derivative
 truecurve <- read.table(here::here('markdowns','lab_14_data',"truecurve.txt"), header=TRUE)
 head(truecurve)
 
-points(abscissa, truecurve$X0vera, type="l", col=2, lwd=2)
+plot(abscissa, Xobs0, xlab="t", ylab="observed data", type="l")
+lines(abscissa, truecurve$X0vera, col=2, lwd=2)
 ```
 
-compute the central finite differences
+Compute the central finite differences
 
 ```{r }
 rappincX1 <- (Xobs0[3:NT]-Xobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
 rappincX2 <- ((Xobs0[3:NT]-Xobs0[2:(NT-1)])/(abscissa[3:NT]-abscissa[2:(NT-1)])-(Xobs0[2:(NT-1)]-Xobs0[1:(NT-2)])/(abscissa[2:(NT-1)]-abscissa[1:(NT-2)]))*2/(abscissa[3:(NT)]-abscissa[1:(NT-2)])
-
-par(mfrow=c(1, 3))
-plot(abscissa, Xobs0, xlab="t", ylab="observed data", type="l")
-plot(abscissa[2:(NT-1)], rappincX1, xlab="t", ylab="first differences x", type="l")
-plot(abscissa[2:(NT-1)], rappincX2, xlab="t", ylab="second differences x", type="l")
 
 par(mfrow=c(1, 3))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data", type='l', main="function")
@@ -55,28 +59,29 @@ points(truecurve$Abscissa, truecurve$X2vera, type='l', col="orange", lwd=3)
 ```
 
 
-REGRESSION SPLINES ####
+### Regression Splines
 
-Load package fda
+Load package `fda`
 
-```{r }
+```{r message=FALSE}
 library(fda)
 ```
 
 Set parameters
 
 ```{r }
-m <- 5           # spline order 
-degree <- m-1    # spline degree 
-
-nbasis <- 9
+norder <- 5      # spline order (4th order polynomials)
+degree <- m-1    # spline degree
+nbasis <- 9      # how many basis we want
 ```
 
 Create the basis
 
 ```{r }
 help(create.bspline.basis)
-basis <- create.bspline.basis(rangeval=c(0, 1), nbasis=nbasis, norder=m)
+basis <- create.bspline.basis(rangeval=c(0, 1),
+                              nbasis=nbasis,
+                              norder=norder)
 ```
 
 If breaks are not provided, equally spaced knots are created
@@ -84,6 +89,7 @@ If breaks are not provided, equally spaced knots are created
 ```{r }
 names(basis)
 
+par(mfrow=c(1,1))
 plot(basis)
 ```
 
@@ -100,7 +106,7 @@ Fit via LS
 ```{r }
 help(lsfit)
 
-est_coef=lsfit(basismat, Xobs0, intercept=FALSE)$coef
+est_coef <- lsfit(basismat, Xobs0, intercept=FALSE)$coef
 est_coef
 
 Xsp0 <- basismat %*% est_coef
@@ -111,21 +117,19 @@ points(abscissa, Xsp0, type="l", col="blue", lwd=2)
 abline(v=basis$params)
 ```
 
-to obtain the first derivative (argument Lfdobj=1)
+To obtain the first derivative (argument `Lfdobj=1`)
 
 ```{r }
 basismat1 <- eval.basis(abscissa, basis, Lfdobj=1)
-head(basismat1)
 Xsp1 <- basismat1 %*% est_coef
 ```
 
-to obtain the second derivative (argument Lfdobj=2)
+To obtain the second derivative (argument `Lfdobj=2`)
 
 ```{r }
 basismat2 <- eval.basis(abscissa, basis, Lfdobj=2)
 Xsp2 <- basismat2 %*% est_coef
 
-x11(width=14)
 par(mfrow=c(1, 3))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
 points(abscissa, truecurve$X0vera, type="l", col="orange", lwd=3)
@@ -139,7 +143,7 @@ points(truecurve$Abscissa, truecurve$X2vera, type='l', col="orange", lwd=3)
 points(abscissa, Xsp2, type="l", col="blue", lwd=2)
 ```
 
-alternative code 
+Alternative code
 
 ```{r }
 help(smooth.basis)
@@ -147,51 +151,53 @@ Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
 Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
 Xsp1bis <- eval.fd(abscissa, Xsp$fd, Lfd=1) # first derivative
 Xsp2bis <- eval.fd(abscissa, Xsp$fd, Lfd=2) # second derivative
-df <- Xsp$df   #  the degrees of freedom in the smoothing curve  
+df <- Xsp$df   #  the degrees of freedom in the smoothing curve
 df             #  for regression splines the df are the number of basis
 ```
 
-Approximate pointwise confidence intervals ####
-As in linear models, we can estimate the variance of x(t) as
-sigma^2*diag[phi*(phi'phi)^{-1}(phi)']
+#### Approximate pointwise confidence intervals
+
+As in linear models, we can estimate the variance of $x(t)$ as $\sigma^2\cdot\mathrm{diag}[\phi\cdot(\phi'\phi)^{-1}(\phi)']$
 
 ```{r }
-S <- basismat%*%solve(t(basismat)%*%basismat)%*%t(basismat) #projection operator 
+S <- basismat %*% solve(t(basismat) %*% basismat) %*% t(basismat) #projection operator
 sum(diag(S))
-sigmahat <- sqrt(sum((Xsp0-Xobs0)^2)/(NT-df)) #estimate of sigma
-lb <- Xsp0-qnorm(0.975)*sigmahat*sqrt(diag(S))
-ub <- Xsp0+qnorm(0.975)*sigmahat*sqrt(diag(S))
+sigmahat <- sqrt(sum((Xsp0-Xobs0)^2)/(NT-df)) # estimate of sigma
+lb <- Xsp0-qnorm(0.975)*sigmahat*sqrt(diag(S)) # upper bound
+ub <- Xsp0+qnorm(0.975)*sigmahat*sqrt(diag(S)) # lower bound
 
+par(mfrow=c(1,1))
 plot(abscissa, Xsp0, type="l", col="blue", lwd=2, ylab="")
 points(abscissa, lb, type="l", col="blue", lty="dashed")
 points(abscissa, ub, type="l", col="blue", lty="dashed")
 points(abscissa, truecurve$X0vera, type="l")
 ```
 
-Oversmoothing: number of basis too low ####
+#### Oversmoothing: number of basis too low
 
 ```{r }
 nbasis <- 7
 
 basisbis <- create.bspline.basis(c(0, 1), nbasis, m)
+
 par(mfrow=c(1, 1))
 plot(basisbis)
 
 basismatbis <- eval.basis(abscissa, basisbis)
-Xsp0bis <- basismatbis %*% lsfit(basismatbis, Xobs0, intercept=FALSE)$coef
+est_coef_bis <- lsfit(basismatbis, Xobs0, intercept=FALSE)$coef
+Xsp0bis <- basismatbis %*% est_coef_bis
 
 basismat1bis <- eval.basis(abscissa, basisbis, Lfdobj=1)
-Xsp1bis <- basismat1bis %*% lsfit(basismatbis, Xobs0, intercept=FALSE)$coef
+Xsp1bis <- basismat1bis %*% est_coef_bis
 
 basismat2bis <- eval.basis(abscissa, basisbis, Lfdobj=2)
-Xsp2bis <- basismat2bis %*% lsfit(basismatbis, Xobs0, intercept=FALSE)$coef
+Xsp2bis <- basismat2bis %*% est_coef_bis
 
 par(mfrow=c(1, 1))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
 points(abscissa, Xsp0bis, type="l", col="green", lwd=2)
 abline(v=basisbis$params, lty=2)
 
-x11(width=14)
 par(mfrow=c(1, 3))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
 points(abscissa, Xsp0bis, type="l", col="green", lwd=2)
@@ -205,7 +211,7 @@ points(abscissa, Xsp2bis, type="l", col="green", lwd=2)
 points(abscissa, Xsp2, type="l", col="blue", lwd=2)
 ```
 
-Undersmoothing: number of basis too high ####
+#### Undersmoothing: number of basis too high
 
 ```{r }
 nbasis <- 30
@@ -215,14 +221,14 @@ par(mfrow=c(1, 1))
 plot(basister)
 
 basismatter <- eval.basis(abscissa, basister)
-Xsp0ter <- basismatter %*% lsfit(basismatter, Xobs0, intercept=FALSE)$coef
+est_coef_ter <- lsfit(basismatter, Xobs0, intercept=FALSE)$coef
+Xsp0ter <- basismatter %*% est_coef_ter
 
 basismat1ter <- eval.basis(abscissa, basister, Lfdobj=1)
-Xsp1ter <- basismat1ter %*% lsfit(basismatter, Xobs0, intercept=FALSE)$coef
+Xsp1ter <- basismat1ter %*% est_coef_ter
 
 basismat2ter <- eval.basis(abscissa, basister, Lfdobj=2)
-Xsp2ter <- basismat2ter %*% lsfit(basismatter, Xobs0, intercept=FALSE)$coef
-
+Xsp2ter <- basismat2ter %*% est_coef_ter
 
 par(mfrow=c(1, 1))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
@@ -244,7 +250,7 @@ points(abscissa, Xsp2bis, type="l", col="green", lwd=2)
 points(abscissa, Xsp2, type="l", col="blue", lwd=2)
 ```
 
-generalized cross-validation
+Generalized cross-validation
 
 ```{r }
 nbasis <- 6:30
@@ -259,7 +265,7 @@ nbasis[which.min(gcv)]
 abline(v=nbasis[which.min(gcv)], col=2)
 ```
 
-Bias-Variance tradeoff ####
+#### Bias-Variance trade-off
 
 ```{r }
 sigma <- 0.003 # True sigma. Estimated before as sigmahat
@@ -270,8 +276,8 @@ var <- rep(NA, len=length(nbasis))
 for (j in 1:length(nbasis)){
   basis <- create.bspline.basis(c(0, 1), nbasis[j], m)
   basismat <- eval.basis(abscissa, basis)
-  S <- basismat%*%solve(t(basismat)%*%basismat)%*%t(basismat)
-  bias[j] <- sum((truecurve$X0vera-S%*%truecurve$X0vera)[integrationinterval])
+  S <- basismat %*% solve(t(basismat) %*% basismat) %*% t(basismat)
+  bias[j] <- sum((truecurve$X0vera-S %*% truecurve$X0vera)[integrationinterval])
   var[j] <- (sigma^2)*sum(diag(S[integrationinterval, integrationinterval]))
 }
 mse <- var+bias^2
@@ -280,23 +286,21 @@ par(mfrow=c(1, 1))
 plot(nbasis, bias^2, ylim=c(0, max(mse)), type="l", ylab="", main="Bias-Variance tradeoff")
 points(nbasis, var, col="red", type="l")
 points(nbasis, mse, col="green", type="l", lwd=3)
-legend('topright', c("Bias", "Var", "MSE"), col=c("black", "red", "green"), 
+legend('topright', c("Bias", "Var", "MSE"), col=c("black", "red", "green"),
        lty=1, cex=.5)
 ```
 
-
-SMOOTHING SPLINES ####
+### Smoothing Splines
 
 ```{r }
-breaks <- abscissa[((0:50)*2)+1]
+# breaks <- abscissa[((0:50)*2)+1]
 breaks <- abscissa
 
 basis <- create.bspline.basis(breaks, norder=m)
-functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-8)  
+functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-8)
 ```
 
-functional parameter, having arguments: 
-basis, order of the derivative to be penalized, smoothing parameter.
+Functional parameter, having arguments: basis, order of the derivative to be penalized, smoothing parameter.
 
 ```{r }
 Xss <- smooth.basis(abscissa, Xobs0, functionalPar)
@@ -305,7 +309,7 @@ Xss0 <- eval.fd(abscissa, Xss$fd, Lfd=0)
 Xss1 <- eval.fd(abscissa, Xss$fd, Lfd=1)
 Xss2 <- eval.fd(abscissa, Xss$fd, Lfd=2)
 
-df <- Xss$df   #  the degrees of freedom in the smoothing curve
+df <- Xss$df    #  the degrees of freedom in the smoothing curve
 df
 gcv <- Xss$gcv  #  the value of the gcv statistic
 gcv
@@ -319,10 +323,10 @@ plot(abscissa[2:(NT-1)], rappincX2, xlab="t", ylab="second differences x", type=
 points(abscissa, Xss2, type="l", col="blue", lwd=2)
 ```
 
-change lambda: 1e-5
+Change `lambda`: 1e-5
 
 ```{r }
-functionalParbis <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-5)  
+functionalParbis <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-5)
 
 Xssbis <- smooth.basis(abscissa, Xobs0, functionalParbis)
 
@@ -330,16 +334,16 @@ Xss0bis <- eval.fd(abscissa, Xssbis$fd, Lfd=0)
 Xss1bis <- eval.fd(abscissa, Xssbis$fd, Lfd=1)
 Xss2bis <- eval.fd(abscissa, Xssbis$fd, Lfd=2)
 
-dfbis <- Xssbis$df   #  the degrees of freedom in the smoothing curve
+dfbis <- Xssbis$df    #  the degrees of freedom in the smoothing curve
 dfbis
 gcvbis <- Xssbis$gcv  #  the value of the gcv statistic
 gcvbis
 ```
 
-change lambda: 1e-12
+Change `lambda`: 1e-12
 
 ```{r }
-functionalParter <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-12)  
+functionalParter <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-12)
 
 Xsster <- smooth.basis(abscissa, Xobs0, functionalParter)
 
@@ -347,11 +351,10 @@ Xss0ter <- eval.fd(abscissa, Xsster$fd, Lfd=0)
 Xss1ter <- eval.fd(abscissa, Xsster$fd, Lfd=1)
 Xss2ter <- eval.fd(abscissa, Xsster$fd, Lfd=2)
 
-dfter <- Xsster$df   #  the degrees of freedom in the smoothing curve
+dfter <- Xsster$df    #  the degrees of freedom in the smoothing curve
 dfter
 gcvter <- Xsster$gcv  #  the value of the gcv statistic
 gcvter
-
 
 par(mfrow=c(1, 3))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
@@ -368,15 +371,15 @@ points(abscissa, Xss2bis, type="l", col="green", lwd=2)
 points(abscissa, Xss2, type="l", col="blue", lwd=2)
 ```
 
-Recommendation: when choosing the smoothing parameter, look at the
-derivatives vs central finite differences
-generalized cross-validation
+Recommendation: when choosing the smoothing parameter, look at the derivatives vs central finite differences.
+
+#### Generalized cross-validation.
 
 ```{r }
 lambda <- 10^seq(-12, -5, by=0.5)
 gcv <- numeric(length(lambda))
 for (i in 1:length(lambda)){
-  functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[i])  
+  functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[i])
   gcv[i] <- smooth.basis(abscissa, Xobs0, functionalPar)$gcv
 }
 par(mfrow=c(1, 1))
@@ -384,10 +387,10 @@ plot(log10(lambda), gcv)
 lambda[which.min(gcv)]
 ```
 
-best lambda
+Best lambda
 
 ```{r }
-functionalParbest <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[which.min(gcv)])  
+functionalParbest <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[which.min(gcv)])
 
 Xssbest <- smooth.basis(abscissa, Xobs0, functionalParbest)
 
@@ -395,11 +398,10 @@ Xss0best <- eval.fd(abscissa, Xssbest$fd, Lfd=0)
 Xss1best <- eval.fd(abscissa, Xssbest$fd, Lfd=1)
 Xss2best <- eval.fd(abscissa, Xssbest$fd, Lfd=2)
 
-dfbest <- Xssbest$df   #  the degrees of freedom in the smoothing curve
+dfbest <- Xssbest$df    #  the degrees of freedom in the smoothing curve
 dfbest
 gcvbest <- Xssbest$gcv  #  the value of the gcv statistic
 gcvbest
-
 
 par(mfrow=c(1, 3))
 plot(abscissa, Xobs0, xlab="t", ylab="observed data")
@@ -416,12 +418,13 @@ points(abscissa, Xss2bis, type="l", col="green", lwd=1)
 points(abscissa, Xss2best, type="l", col="blue", lwd=2)
 ```
 
+### Local Polynomial Regression
 
-LOCAL POLYNOMIAL REGRESSION ####
-
+```{r message=FALSE}
+library(KernSmooth)
+```
 
 ```{r }
-library(KernSmooth)
 help(locpoly)
 
 m <- 5           # order of the polynomial
@@ -431,7 +434,7 @@ degree <- m-1    # degree of the polynomial
 bw <- 0.05 # bandwidth
 
 Xsm0 <- locpoly(abscissa, Xobs0, degree=degree,
-                bandwidth=bw, gridsize=length(abscissa), 
+                bandwidth=bw, gridsize=length(abscissa),
                 range.x=range(abscissa))
 Xsm0 <- Xsm0$y
 
@@ -461,7 +464,7 @@ plot(abscissa[2:(NT-1)], rappincX2, xlab="t", ylab="second differences x", type=
 points(abscissa, Xsm2, type="l", col="blue", lwd=2)
 ```
 
-Changing the bandwidth: larger value 
+Changing the bandwidth: larger value
 
 ```{r }
 bw <- 0.15
@@ -488,11 +491,11 @@ points(abscissa, Xsm2bis, type="l", col="green", lwd=2)
 points(abscissa, Xsm2, type="l", col="blue", lwd=2)
 ```
 
-a too large bandwidth leads to oversmoothing
-a too small bandwidth leads to undersmoothing
+- **a too large bandwidth leads to oversmoothing**
+- **a too small bandwidth leads to undersmoothing**
 
 ```{r }
-bw <- 0.015 
+bw <- 0.015
 
 Xsm0ter <- locpoly(abscissa, Xobs0, drv=0, degree=degree, bandwidth=bw, gridsize=length(abscissa), range.x=range(abscissa))
 Xsm0ter <- Xsm0ter$y
@@ -518,26 +521,26 @@ points(abscissa, Xsm2bis, type="l", col="green", lwd=2)
 points(abscissa, Xsm2, type="l", col="blue", lwd=2)
 ```
 
-Recommendation: when choosing the bandwidth, look at the
-derivatives vs central finite differences
-Constrained functions ####
+Recommendation: when choosing the bandwidth, look at the derivatives vs central finite differences.
 
-SMOOTHING for positive curves ####
+### Constrained functions
 
-y_j=exp(w(t_j)) + e_j
-f(t)=exp(w(t)) 
-The function w(t) is unconstrained
-The function f(t) is positive
-w(t) is modeled via a basis expansion 
-numerical methods are used to compute the coefficients of the 
-basis expansion
+#### Smoothing for positive curves
+
+$$
+y_j = e^{w(t_j)} + e_j \qquad f(t) = e^{w(t)}
+$$
+
+The function $w(t)$ is unconstrained.
+The function $f(t)$ is positive.
+$w(t)$ is modeled via a basis expansion.
+Numerical methods are used to compute the coefficients of the basis expansion.
 
 ```{r }
 help(smooth.pos)
 ```
 
-
-SMOOTHING for monotone curves ####
+#### Smoothing for monotone curves
 
 Example: Berkeley growth data
 
@@ -545,7 +548,11 @@ Example: Berkeley growth data
 help(growth)
 names(growth)
 
-matplot(growth$age, growth$hgtf, type="l")
+par(mfrow=c(1,2))
+matplot(growth$age, growth$hgtf, type="l",
+        xlab="Age", ylab="Female Height")
+matplot(growth$age, growth$hgtm, type="l",
+        xlab="Age", ylab="Male Height")
 ```
 
 If we neglect considering that the curves must be monotone...
@@ -561,7 +568,7 @@ height <- basismat %*% lsfit(basismat, heightmat, intercept=FALSE)$coef
 
 basismat1 <- eval.basis(evalarg=growth$age, basisobj=heightbasis12,
                          Lfdobj=1)
-heightvelocity <- basismat1 %*% lsfit(x=basismat, y=heightmat, 
+heightvelocity <- basismat1 %*% lsfit(x=basismat, y=heightmat,
                                    intercept=FALSE)$coef
 
 basismat2 <- eval.basis(evalarg=growth$age, basisobj=heightbasis12, Lfdobj=2)
@@ -575,24 +582,29 @@ abline(h=0)
 matplot(age, heightacceleration, type="l")
 ```
 
+```
 par(mfrow=c(1, 3))
 matplot(age, height, type="l" )
 matplot(age[-c(1, 2, 3, 31)], heightvelocity[-c(1, 2, 3, 31), ], type="l" )
 abline(h=0)
 matplot(age[-c(1, 2, 3, 31)], heightacceleration[-c(1, 2, 3, 31), ], type="l")
-a negative velocity does not make any sense (girls height does not 
-decrease over this age interval)
+```
+A negative velocity does not make any sense (girls height does not decrease over this age interval).
+
 A model for monotone curves
-f(t)=int_(t_0)^t exp(w(u)) du
-y_j=b_0 + b_1 * f(t_j) + e_j
-The function w(t) is unconstrained
-The function f(t) is monotone increasing
-b_1>0 for monotone increasing functions
-b_1<0 for monotone decreasing functions
-b_0 is the value of the function at t_0
-w(t) is modeled via a basis expansion 
-numerical methods are used to compute the coefficients of the
-basis expansion, as well as b_0, b_1
+$$
+f(t)=\int_{t_0}^t e^{w(u)} du \qquad
+y_j = b_0 + b_1 \cdot f(t_j) + e_j
+$$
+The function $w(t)$ is unconstrained.
+The function $f(t)$ is monotone increasing.
+
+- $b_1>0$ for monotone increasing functions
+- $b_1<0$ for monotone decreasing functions
+- $b_0$ is the value of the function at $t_0$
+- $w(t)$ is modeled via a basis expansion
+
+Numerical methods are used to compute the coefficients of the basis expansion, as well as $b_0, b_1$.
 
 ```{r }
 nage <- length(age)
@@ -601,7 +613,7 @@ nfine <- 101
 agefine <- seq(ageRng[1], ageRng[2], length=nfine)
 ```
 
-Let's consider only the first 5 girls 
+Let's consider only the first 5 girls
 
 ```{r }
 hgtf <- growth$hgtf[, 1:5]
@@ -612,24 +624,23 @@ We set up an order 6 spline basis with knots at ages of observations
 
 ```{r }
 norder <- 6
-nbasis <- nage - 2 + norder 
-wbasis <- create.bspline.basis(rangeval=ageRng, nbasis=nbasis, 
+nbasis <- nage - 2 + norder
+wbasis <- create.bspline.basis(rangeval=ageRng, nbasis=nbasis,
                               norder=norder, breaks=age)
 ```
 
-We construct the functional parameter with penalization of the third 
-derivative
+We construct the functional parameter with penalization of the third derivative
 
 ```{r }
-Lfdobj <- 3          
-lambda <- 10^(-0.5)  
-cvecf <- matrix(0, nbasis, ncasef) # this is used as initial value 
+Lfdobj <- 3
+lambda <- 10^(-0.5)
+cvecf <- matrix(0, nbasis, ncasef) # this is used as initial value
                                    # for the numerical techniques
 Wfd0 <- fd(coef=cvecf, basisobj=wbasis)
 growfdPar <- fdPar(fdobj=Wfd0, Lfdobj=Lfdobj, lambda=lambda)
 ```
 
-We carry out a monotone smoothing 
+We carry out a monotone smoothing
 
 ```{r }
 help(smooth.monotone)
@@ -659,9 +670,7 @@ plot(accelfdUN, xlim=c(1, 18), ylim=c(-4, 3), lty=1, lwd=2,
 plot(wbasis)
 ```
 
-
 Extension to multidimensional curves
-
 
 ```{r }
 noisycurve3D <- read.table(here::here('markdowns','lab_14_data',"noisycurve3D.txt"), header=TRUE)
@@ -678,7 +687,6 @@ Ytrue0 <- truecurve3D$Y0
 Ztrue0 <- truecurve3D$Z0
 true0 <- rbind(Xtrue0, Ytrue0, Ztrue0)
 
-
 library(rgl)
 
 open3d()
@@ -687,7 +695,7 @@ points3d(t(obs0[1, ]), t(obs0[2, ]), t(obs0[3, ]), xlab="", ylab="", zlab="", si
 box3d()
 ```
 
-compute the difference quotient
+Compute the difference quotient
 
 ```{r }
 rappincX1 <- (Xobs0[3:NT]-Xobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
@@ -697,8 +705,6 @@ rappincZ1 <- (Zobs0[3:NT]-Zobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
 rappincX2 <- ((Xobs0[3:NT]-Xobs0[2:(NT-1)])/(abscissa[3:NT]-abscissa[2:(NT-1)])-(Xobs0[2:(NT-1)]-Xobs0[1:(NT-2)])/(abscissa[2:(NT-1)]-abscissa[1:(NT-2)]))*2/(abscissa[3:(NT)]-abscissa[1:(NT-2)])
 rappincY2 <- ((Yobs0[3:NT]-Yobs0[2:(NT-1)])/(abscissa[3:NT]-abscissa[2:(NT-1)])-(Yobs0[2:(NT-1)]-Yobs0[1:(NT-2)])/(abscissa[2:(NT-1)]-abscissa[1:(NT-2)]))*2/(abscissa[3:(NT)]-abscissa[1:(NT-2)])
 rappincZ2 <- ((Zobs0[3:NT]-Zobs0[2:(NT-1)])/(abscissa[3:NT]-abscissa[2:(NT-1)])-(Zobs0[2:(NT-1)]-Zobs0[1:(NT-2)])/(abscissa[2:(NT-1)]-abscissa[1:(NT-2)]))*2/(abscissa[3:(NT)]-abscissa[1:(NT-2)])
-
-
 
 
 par(mfrow=c(3, 3), mar=c(6, 5, 2, 1), mex=0.6, mgp=c(2.2, 0.7, 0), pty="m", font.main=1, font.lab=1, font.axis=1, cex.lab=1.3, cex.axis=1)
@@ -712,8 +718,6 @@ plot(abscissa[2:(NT-1)], rappincZ1, xlab=expression(tilde(s)), ylab="first diffe
 plot(abscissa[2:(NT-1)], rappincX2, xlab=expression(tilde(s)), ylab="second differences x", type="l")
 plot(abscissa[2:(NT-1)], rappincY2, xlab=expression(tilde(s)), ylab="second differences y", type="l")
 plot(abscissa[2:(NT-1)], rappincZ2, xlab=expression(tilde(s)), ylab="second differences z", type="l")
-
-
 
 
 bw <- 0.05
@@ -778,119 +782,22 @@ lines3d(t(Xsm0), t(Ysm0), t(Zsm0), size=3, col="blue")
 box3d()
 ```
 
-or we may use another among the techniques seen above
-Problem 4 - 18/06/2021 ####
-The file power.txt reports the measurements of the electric power consumption 
-in one household collected every day for one year. Considering a functional data 
-analysis approach, answer to the following questions.
-a) Perform a smoothing of the data using a Fourier basis. Choose the number of 
-   basis functions using a generalized cross-validation (GCV) criterion. 
-   Report the plot of the values of the GCV statistic as a function of the number 
-   of basis functions, the number of basis functions chosen, a plot of the basis 
-   system used and a plot of the smoothed data.
-b) Compute an approximation of the first derivative of the curve from the data 
-   and the first derivative of the smoothed curve obtained at point (a). 
-   Provide a plot to compare the two and comment on the result.
-c) Choose a number of basis functions that you deem appropriate to show the effect 
-   of oversmoothing. Report the number of basis functions chosen, provide a plot 
-   of the the smoothed data and comment the result.
-d) Choose a number of basis functions that you deem appropriate to show the effect 
-   of overfitting. Report the number of basis functions chosen, provide a plot of 
-   the the smoothed data and comment the result.
+Or we may use another among the techniques seen above.
 
-```{r }
-rm(list=ls())
+Missing exam exercise here.
 
-library(fda)
+## K-mean Alignment (KMA)
 
-data <- read.table(here::here('markdowns','lab_14_data','power.txt'), header=TRUE)
-dim(data)
-head(data)
+Based on Sangalli, L.M., Secchi, P., Vantini, S., Vitelli, V., 2010. "K-mean alignment for curve clustering". Computational Statistics and Data Analysis, 54, 1219-1233.
 
-NT <- dim(data)[1]
-abscissa <- 1:365
-Xobs0 <- data$power
+Using the R package `fdakma`.
 
-plot(abscissa, Xobs0, type="l")
+It's now deprecated, so run this code to install the last available version
 ```
-
-point a)
-generalized cross-validation
-
-```{r }
-nbasis <- 6:50
-gcv <- numeric(length(nbasis))
-for (i in 1:length(nbasis)){
-  basis <- create.fourier.basis(range(abscissa), nbasis[i])
-  gcv[i] <- smooth.basis(abscissa, Xobs0, basis)$gcv
-}
-par(mfrow=c(1, 1))
-plot(nbasis, gcv)
-nbasis[which.min(gcv)]
-abline(v=nbasis[which.min(gcv)], col='red')
-
-basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis[which.min(gcv)])
-plot(basis)
-
-Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
-Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
-
-plot(abscissa, Xobs0, xlab="t", ylab="observed data")
-points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
+install.packages("devtools") 
+require(devtools) 
+install_version("fdakma", version = "1.2.1", repos = "http://cran.r-project.org")
 ```
-
-point b)
-compute the central finite differences
-
-```{r }
-rappincX1 <- (Xobs0[3:NT]-Xobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
-Xsp1bis <- eval.fd(abscissa, Xsp$fd, Lfd=1) # first derivative
-
-plot(abscissa[2:(NT-1)], rappincX1, xlab="t", ylab="first differences x", type="l")
-points(abscissa, Xsp1bis, type='l', col="orange", lwd=3)
-```
-
-point c)
-oversmoothing
-
-```{r }
-nbasis <- 5
-basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
-
-Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
-Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
-
-plot(abscissa, Xobs0, xlab="t", ylab="observed data")
-points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
-```
-
-point d)
-overfitting
-
-```{r }
-nbasis <- 50
-basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
-
-Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
-Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
-
-plot(abscissa, Xobs0, xlab="t", ylab="observed data")
-points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
-```
-
-CHAPTER 2 KMA
-
-K-mean alignment
-
-
-```{r }
-setwd("~/Corsi/Statistica Applicata/Applied Statistics MATE 21-22/Lab 14 - 31052022")
-```
-
-Based on Sangalli, L.M., Secchi, P., Vantini, S., Vitelli, V., 2010. 
-"K-mean alignment for curve clustering". 
-Computational Statistics and Data Analysis, 54, 1219-1233.
-Using the R package fdakma
 
 ```{r }
 library(fdakma)
@@ -910,11 +817,11 @@ Plot of original functions
 
 ```{r }
 matplot(t(x), t(y0), type='l', xlab='x', ylab='orig.func')
-title ('Original functions')
+title('Original functions')
 ```
 
-There seems to be three clusters of functions obtained by warping the 
-abscissas.
+There seems to be 3 clusters of functions obtained by warping the abscissas.
+
 Plot of original function first derivatives
 
 ```{r }
@@ -927,11 +834,11 @@ Without alignment, let's try with 3 clusters
 ```{r }
 set.seed(4)
 fdakma_example_noalign_0der <- kma(
-  x=x, y0=y0, n.clust=3, 
-  warping.method='NOalignment', 
-  similarity.method='d0.pearson',   # similarity computed as the cosine
-                                      # between the original curves 
-                                      # (correlation)
+  x=x, y0=y0, n.clust=3,
+  warping.method='NOalignment',
+  similarity.method='d0.pearson', # similarity computed as the cosine
+                                  # between the original curves
+                                  # (correlation)
   center.method='k-means'
   #, seeds=c(1, 11, 21) # you can give a little help to the algorithm...
 )
@@ -940,16 +847,15 @@ kma.show.results(fdakma_example_noalign_0der)
 fdakma_example_noalign_0der$labels
 ```
 
-We might want to use a similarity measure which considers first 
-derivatives
+We might want to use a similarity measure which considers first derivatives
 
 ```{r }
 set.seed(5)
 fdakma_example_noalign_1der <- kma(
-  x=x, y0=y0, y1=y1, n.clust=3, 
-  warping.method='NOalignment', 
+  x=x, y0=y0, y1=y1, n.clust=3,
+  warping.method='NOalignment',
   similarity.method='d1.pearson',   # similarity computed as the cosine
-                                      # between the first derivatives 
+                                      # between the first derivatives
                                       # (correlation)
   center.method='k-means'
   #, seeds=c(1, 11, 21) # you can give a little help to the algorithm...
@@ -966,18 +872,15 @@ table(fdakma_example_noalign_0der$labels,
       fdakma_example_noalign_1der$labels, dnn=c("0der", "1der"))
 ```
 
-Let's allow for alignment. 
-Result of kma with 2 clusters, 
-allowing affine transformation for the abscissas
-and considering 'd1.pearson' as similarity.method.
+Let's allow for alignment. Result of `kma` with 2 clusters, allowing `affine` transformation for the abscissas and considering `d1.pearson` as `similarity.method`.
 
 ```{r }
 set.seed(1)
 fdakma_example <- kma(
-  x=x, y0=y0, y1=y1, n.clust=2, 
-  warping.method='affine', 
+  x=x, y0=y0, y1=y1, n.clust=2,
+  warping.method='affine',
   similarity.method='d1.pearson',  # similarity computed as the cosine
-                                     # between the first derivatives 
+                                     # between the first derivatives
                                      # (correlation)
   center.method='k-means'
   #seeds=c(1, 21) # you can give a little help to the algorithm...
@@ -986,37 +889,34 @@ fdakma_example <- kma(
 kma.show.results(fdakma_example)
 ```
 
-Much better: high within group similarity after alignment, 
-the boxplot is concentrated on 1.
+Much better: high within group similarity after alignment, the boxplot is concentrated on 1.
+
 Labels assigned to each function
 
 ```{r }
 fdakma_example$labels
 
 table(fdakma_example_noalign_0der$labels,
-      fdakma_example$labels, 
+      fdakma_example$labels,
       dnn=c("NOalign_0der_3groups", "Align_1der_2groups"))
 ```
 
-Total shifts and dilations applied to the original 
-abscissa to obtain the aligned abscissa
+Total shifts and dilations applied to the original abscissa to obtain the aligned abscissa
 
 ```{r }
 fdakma_example$shift
 fdakma_example$dilation
 ```
 
-Warpings applied to the original data, colored according to  
-membership to the 3 clusters obtained via k-means, no alignment,
-d0.pearson similarity
+Warpings applied to the original data, colored according to membership to the 3 clusters obtained via `k-means`, no alignment, `d0.pearson` similarity.
 
 ```{r }
 plot(x, type="n", xlim=c(min(x), max(x)), ylim=c(min(x), max(x)+2), xlab="abscissa", ylab="warping")
 title("Alignment affinities")
 for(i in 1:30)(
-  abline(a=fdakma_example$shift[i], b=fdakma_example$dilation[i], 
+  abline(a=fdakma_example$shift[i], b=fdakma_example$dilation[i],
          col=fdakma_example_noalign_0der$labels[i])
-)  
+)
 ```
 
 How to choose the number of clusters and the warping method
@@ -1025,50 +925,41 @@ How to choose the number of clusters and the warping method
 help(kma.compare)
 
 kma.compare_example <- kma.compare (
-  x=x, y0=y0, y1=y1, n.clust=1:3, 
-  warping.method=c('affine'), 
+  x=x, y0=y0, y1=y1, n.clust=1:3,
+  warping.method=c('affine'),
   similarity.method='d1.pearson',
-  center.method='k-means', 
+  center.method='k-means',
   seeds=c(1, 21, 30),
   plot.graph=TRUE)
 
 kma.compare_example_2 <- kma.compare (
-  x=x, y0=y0, y1=y1, n.clust=1:3, 
-  warping.method=c("shift", "dilation", "affine"), 
+  x=x, y0=y0, y1=y1, n.clust=1:3,
+  warping.method=c("shift", "dilation", "affine"),
   similarity.method='d1.pearson',
-  center.method='k-means', 
+  center.method='k-means',
   seeds=c(1, 21, 30),
   plot.graph=TRUE)
 
 kma.compare_example_3 <- kma.compare (
-  x=x, y0=y0, y1=y1, n.clust=1:3, 
-  warping.method=c("NOalignment", "shift", "dilation", "affine"), 
+  x=x, y0=y0, y1=y1, n.clust=1:3,
+  warping.method=c("NOalignment", "shift", "dilation", "affine"),
   similarity.method='d1.pearson',
-  center.method='k-means', 
+  center.method='k-means',
   seeds=c(1, 21, 30),
   plot.graph=TRUE)
 ```
 
-CHAPTER 3 FPCA
+## Functional Principal Component Analysis (FPCA)
 
-Functional principal component analysis
+Partly based on Ramsay, Hooker, Graves, "Functional Data Analysis with R and Matlab", Springer, 2009. Part of the codes are courtesy of Prof. Alessia Pini.
 
-
-```{r }
-setwd("~/Corsi/Statistica Applicata/Applied Statistics MATE 21-22/Lab 14 - 31052022")
-```
-
-Partly based on Ramsay, Hooker, Graves, 
-"Functional Data Analysis with R and Matlab", Springer, 2009
-Part of the codes are courtesy of Prof. Alessia Pini
-
-```{r }
+```{r message=FALSE}
 library(fda)
 ```
 
-First dataset: canadian weather ####
-daily temperatures recorded in 35 weather stations of Canada 
-(data are averages over 35 years - 1960 to 1994)
+### First dataset: `CanadianWeather`
+
+Daily temperatures recorded in 35 weather stations of Canada (data are averages over 35 years - 1960 to 1994)
 
 ```{r }
 help(CanadianWeather)
@@ -1079,16 +970,16 @@ dim(data_W)
 matplot(data_W, type='l', main='Canadian temperature', xlab='Day', ylab='Temperature')
 ```
 
-First of all we smooth the data. We choose a Fourier basis
-(periodic). We need to set the dimension of the basis
+First of all we smooth the data. We choose a Fourier basis (periodic). We need to set the dimension of the basis
 
 ```{r }
 time <- 1:365
 ```
 
-Choice 1: we set a high dimensional basis (interpolating)
-Pros: no loss of information
-Cons: possible overfitting 
+**Choice 1**: we set a high dimensional basis (interpolating)
+
+- Pros: no loss of information
+- Cons: possible overfitting
 
 ```{r }
 basis.1 <- create.fourier.basis(rangeval=c(0, 365), nbasis=365)
@@ -1096,9 +987,10 @@ data_W.fd.1 <- Data2fd(y=data_W, argvals=time, basisobj=basis.1)
 plot.fd(data_W.fd.1)
 ```
 
-Choice 2: reduced dimensionality (we set a low dimensional basis)
-Pros: the data are much smoother and the measurement error is filtered
-Cons: I could have lost important information
+**Choice 2**: reduced dimensionality (we set a low dimensional basis)
+
+- Pros: the data are much smoother and the measurement error is filtered
+- Cons: I could have lost important information
 
 ```{r }
 basis.2 <- create.fourier.basis(rangeval=c(0, 365), nbasis=21)
@@ -1106,7 +998,7 @@ data_W.fd.2 <- Data2fd(y=data_W, argvals=time, basisobj=basis.2)
 plot.fd(data_W.fd.2)
 ```
 
-Choice 3: compromise between 1 and 2
+**Choice 3**: compromise between 1 and 2
 
 ```{r }
 basis.3 <- create.fourier.basis(rangeval=c(0, 365), nbasis=109)
@@ -1114,19 +1006,16 @@ data_W.fd.3 <- Data2fd(y=data_W, argvals=time, basisobj=basis.3)
 plot.fd(data_W.fd.3)
 ```
 
-estimate of the mean and of the covariance kernel
+Estimate of the mean and of the covariance kernel
 
-```{r }
+```{r message=FALSE}
 library(fields)
-
-
-x11(width=10)
-par(mfrow=c(2, 3))
 ```
 
-mean
-
 ```{r }
+# Mean
+
+par(mfrow=c(2, 3))
 plot.fd(data_W.fd.1)
 lines(mean.fd(data_W.fd.1), lwd=3)
 
@@ -1135,13 +1024,11 @@ lines(mean.fd(data_W.fd.2), lwd=2)
 
 plot.fd(data_W.fd.3)
 lines(mean.fd(data_W.fd.3), lwd=2)
-```
 
-covariance
+# Covariance
 
-```{r }
 eval.1 <- eval.fd(time, data_W.fd.1)
-image.plot(time, time, (cov(t(eval.1))[1:365, ])) 
+image.plot(time, time, (cov(t(eval.1))[1:365, ]))
 
 eval.2 <- eval.fd(time, data_W.fd.2)
 image.plot(time, time, (cor(t(eval.2))[1:365, ]))
@@ -1150,24 +1037,24 @@ eval.3 <- eval.fd(time, data_W.fd.3)
 image.plot(time, time, (cov(t(eval.3))[1:365, ]))
 ```
 
-Second dataset: lip ####
-51 measurements of the position of the lower lip every 7 
-milliseconds for 20 repetitions of the syllable 'bob'.
+### Second dataset: `lip`
+
+51 measurements of the position of the lower lip every 7 milliseconds for 20 repetitions of the syllable 'bob'.
 
 ```{r }
 help(lip)
 
 data_L <- lip
+length(data_L)
 
 time <- seq(0, 350, by=7)
-matplot(time, data_L, type='l', main='Lip data', ylab='Position',
-        xlab='Time (millisec.)')
+
+par(mfrow=c(1,1))
+matplot(time, data_L, type='l', main='Lip data',
+        ylab='Position', xlab='Time (millisec.)')
 ```
 
-smoothing. In this case, the data are already quite smooth. 
-The smoothing does not pose problems
-Since the Fourier basis creates periodical data, it modifies the
-data near the boundaries of the domain, to make them periodical
+In this case, the data are already quite smooth. The smoothing does not pose problems. Since the Fourier basis creates periodical data, it modifies the data near the boundaries of the domain, to make them periodical
 
 ```{r }
 basis <- create.fourier.basis(rangeval=c(0, 350), nbasis=51)
@@ -1194,31 +1081,32 @@ eval <- eval.fd(time, data_L.fd)
 image.plot(time, time, (cov(t(eval))[1:51, ]))
 ```
 
-FPCA #####
+### FPCA on `CanadianWeather`
 
 ```{r }
 help(pca.fd)
 ```
 
-First dataset: canadian weather ####
-interpolated data (Choice 1)
+#### Interpolated data (Choice 1)
 
 ```{r }
+par(mfrow=c(1,1))
 plot.fd(data_W.fd.1, ylab='temperature')
 
 pca_W.1 <- pca.fd(data_W.fd.1, nharm=5, centerfns=TRUE)
 ```
 
-scree plot
-pca.fd computes all the 365 eigenvalues, but only the first 
-N-1=34 are non-null
+Scree plot
+
+`pca.fd` computes all the 365 eigenvalues, but only the first N-1=34 are non-null
 
 ```{r }
+par(mfrow=c(1,2))
 plot(pca_W.1$values[1:35], xlab='j', ylab='Eigenvalues')
 plot(cumsum(pca_W.1$values)[1:35]/sum(pca_W.1$values), xlab='j', ylab='CPV', ylim=c(0.8, 1))
 ```
 
-first two FPCs
+First two FPCs
 
 ```{r }
 layout(cbind(1, 2))
@@ -1227,49 +1115,48 @@ abline(h=0, lty=2)
 plot(pca_W.1$harmonics[2, ], col=2, ylab='FPC2', ylim=c(-0.1, 0.08))
 ```
 
-plot of the FPCs as perturbation of the mean
+Plot of the FPCs as perturbation of the mean
 
 ```{r }
 media <- mean.fd(data_W.fd.1)
 
+par(mfrow=c(1,2))
 plot(media, lwd=2, ylim=c(-25, 20), ylab='temperature', main='FPC1')
 lines(media+pca_W.1$harmonics[1, ]*sqrt(pca_W.1$values[1]), col=2)
 lines(media-pca_W.1$harmonics[1, ]*sqrt(pca_W.1$values[1]), col=3)
-```
+# variation in amplitude (more in winter than in summer)
 
-variation in amplitude (more in winter than in summer)
-
-```{r }
 plot(media, lwd=2, ylim=c(-20, 20), ylab='temperature', main='FPC2')
 lines(media+pca_W.1$harmonics[2, ]*sqrt(pca_W.1$values[2]), col=2)
 lines(media-pca_W.1$harmonics[2, ]*sqrt(pca_W.1$values[2]), col=3)
+# temperate climate or not.
 ```
 
-temperate climate or not
-Command of the library fda that automatically does these plots
+Command of the library `fda` that automatically does these plots
 
 ```{r }
 par(mfrow=c(1, 2))
 plot(pca_W.1, nx=100, pointplot=TRUE, harm=c(1, 2), expand=0, cycle=FALSE)
 ```
 
-
-smooth data (Choice 2)
+#### Smooth data (Choice 2)
 
 ```{r }
+par(mfrow=c(1,1))
 plot.fd(data_W.fd.2)
 
 pca_W.2 <- pca.fd(data_W.fd.2, nharm=5, centerfns=TRUE)
 ```
 
-scree plot
+Scree plot
 
 ```{r }
+par(mfrow=c(1,2))
 plot(pca_W.2$values, xlab='j', ylab='Eigenvalues')
 plot(cumsum(pca_W.2$values)/sum(pca_W.2$values), xlab='j', ylab='CPV', ylim=c(0.8, 1))
 ```
 
-first two FPCs
+First two FPCs
 
 ```{r }
 layout(cbind(1, 2))
@@ -1278,10 +1165,12 @@ abline(h=0, lty=2)
 plot(pca_W.2$harmonics[2, ], col=2, ylab='FPC2', ylim=c(-0.1, 0.08))
 ```
 
-plot of the FPCs as perturbation of the mean
+Plot of the FPCs as perturbation of the mean
 
 ```{r }
 media <- mean.fd(data_W.fd.2)
+
+par(mfrow=c(1,2))
 
 plot(media, lwd=2, ylim=c(-25, 20), ylab='temperature', main='PC1')
 lines(media+pca_W.2$harmonics[1, ]*sqrt(pca_W.2$values[1]), col=2)
@@ -1292,8 +1181,9 @@ lines(media+pca_W.2$harmonics[2, ]*sqrt(pca_W.2$values[2]), col=2)
 lines(media-pca_W.2$harmonics[2, ]*sqrt(pca_W.2$values[2]), col=3)
 ```
 
-similar interpretations as before
-scatter plot of the scores
+Similar interpretations as before.
+
+Scatter plot of the scores.
 
 ```{r }
 par(mfrow=c(1, 2))
@@ -1305,7 +1195,7 @@ plot(pca_W.1$scores[, 1], pca_W.1$scores[, 2], type="n", xlab="Scores FPC1",
 text(pca_W.1$scores[, 1], pca_W.1$scores[, 2], dimnames(data_W)[[2]], cex=1)
 ```
 
-outlier: Resolute (35)
+Outlier: Resolute (35)
 
 ```{r }
 layout(1)
@@ -1318,9 +1208,9 @@ plot(coord[, 2:1], col=0)
 text(coord[, 2:1], rownames(coord))
 ```
 
-Exercise: perform FPCA with Choice 3 of smoothing
+Exercise: perform FPCA with Choice 3 of smoothing.
 
-Second dataset: lip ####
+### FPCA on `lip`
 
 ```{r }
 plot.fd(data_L.fd)
@@ -1328,9 +1218,10 @@ plot.fd(data_L.fd)
 pca_L <- pca.fd(data_L.fd, nharm=5, centerfns=TRUE)
 ```
 
-scree plot
+Scree plot
 
 ```{r }
+par(mfrow=c(1,2))
 plot(pca_L$values, xlab='j', ylab='Eigenvalues')
 plot(cumsum(pca_L$values)/sum(pca_L$values), xlab='j', ylab='CPV', ylim=c(0.8, 1))
 ```
@@ -1344,7 +1235,7 @@ plot(pca_L$harmonics[2, ], col=2, ylab='FPC2', ylim=c(-0.09, 0.11))
 plot(pca_L$harmonics[3, ], col=3, ylab='FPC3', ylim=c(-0.09, 0.11))
 ```
 
-plot of the principal components as perturbation of the mean
+Plot of the principal components as perturbation of the mean
 
 ```{r }
 media <- mean.fd(data_L.fd)
@@ -1352,26 +1243,20 @@ media <- mean.fd(data_L.fd)
 plot(media, lwd=2, ylim=c(-10, 12), main='FPC1')
 lines(media+pca_L$harmonic[1, ]*sqrt(pca_L$values[1]), col=2)
 lines(media-pca_L$harmonic[1, ]*sqrt(pca_L$values[1]), col=3)
-```
+# variation in amplitude in the centre
 
-variation in amplitude in the centre
-
-```{r }
 plot(media, lwd=2, ylim=c(-10, 12), main='FPC2')
 lines(media+pca_L$harmonic[2, ]*sqrt(pca_L$values[2]), col=2)
 lines(media-pca_L$harmonic[2, ]*sqrt(pca_L$values[2]), col=3)
-```
+# horizontal translation - difference in timing
 
-horizontal translation - difference in timing
-
-```{r }
 plot(media, lwd=2, ylim=c(-10, 12), main='FPC3')
 lines(media+pca_L$harmonic[3, ]*sqrt(pca_L$values[3]), col=2)
 lines(media-pca_L$harmonic[3, ]*sqrt(pca_L$values[3]), col=3)
+# variation in amplitude at the boundaries of the domain
 ```
 
-variation in amplitude at the boundaries of the domain
-Command of the library fda that automatically does these plots
+Command of the library `fda` that automatically does these plots
 
 ```{r }
 par(mfrow=c(1, 3))
@@ -1397,4 +1282,3 @@ matplot(eval, type='l')
 lines(eval[, 12], lwd=4, col=2)
 lines(eval[, 9], lwd=4, col=3)
 ```
-

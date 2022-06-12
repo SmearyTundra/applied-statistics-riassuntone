@@ -1,0 +1,88 @@
+### Problem 4 - 18/06/2021
+
+The file `power.txt` reports the measurements of the electric power consumption in one household collected every day for one year. Considering a functional data analysis approach, answer to the following questions.
+
+a. Perform a smoothing of the data using a Fourier basis. Choose the number of basis functions using a generalized cross-validation (GCV) criterion. Report the plot of the values of the GCV statistic as a function of the number of basis functions, the number of basis functions chosen, a plot of the basis system used and a plot of the smoothed data.
+b. Compute an approximation of the first derivative of the curve from the data and the first derivative of the smoothed curve obtained at point a. Provide a plot to compare the two and comment on the result.
+c. Choose a number of basis functions that you deem appropriate to show the effect of oversmoothing. Report the number of basis functions chosen, provide a plot of the the smoothed data and comment the result.
+d. Choose a number of basis functions that you deem appropriate to show the effect of overfitting. Report the number of basis functions chosen, provide a plot of the the smoothed data and comment the result.
+
+```{r }
+rm(list=ls())
+
+library(fda)
+
+data <- read.table(here::here('markdowns','lab_14_data','power.txt'), header=TRUE)
+dim(data)
+head(data)
+
+NT <- dim(data)[1]
+abscissa <- 1:365
+Xobs0 <- data$power
+
+plot(abscissa, Xobs0, type="l")
+```
+
+point a)
+generalized cross-validation
+
+```{r }
+nbasis <- 6:50
+gcv <- numeric(length(nbasis))
+for (i in 1:length(nbasis)){
+  basis <- create.fourier.basis(range(abscissa), nbasis[i])
+  gcv[i] <- smooth.basis(abscissa, Xobs0, basis)$gcv
+}
+par(mfrow=c(1, 1))
+plot(nbasis, gcv)
+nbasis[which.min(gcv)]
+abline(v=nbasis[which.min(gcv)], col='red')
+
+basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis[which.min(gcv)])
+plot(basis)
+
+Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa, Xobs0, xlab="t", ylab="observed data")
+points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
+```
+
+point b)
+compute the central finite differences
+
+```{r }
+rappincX1 <- (Xobs0[3:NT]-Xobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
+Xsp1bis <- eval.fd(abscissa, Xsp$fd, Lfd=1) # first derivative
+
+plot(abscissa[2:(NT-1)], rappincX1, xlab="t", ylab="first differences x", type="l")
+points(abscissa, Xsp1bis, type='l', col="orange", lwd=3)
+```
+
+point c)
+oversmoothing
+
+```{r }
+nbasis <- 5
+basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
+
+Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa, Xobs0, xlab="t", ylab="observed data")
+points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
+```
+
+point d)
+overfitting
+
+```{r }
+nbasis <- 50
+basis <- create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
+
+Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis <- eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa, Xobs0, xlab="t", ylab="observed data")
+points(abscissa, Xsp0bis, type="l", col="red", lwd=2)
+```
