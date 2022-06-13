@@ -5,7 +5,7 @@ editor_options:
 ---
 \newpage
 
-# LAB 6:
+# LAB 6: Tests on the mean of a Gaussian population
 
 ```{r, message=FALSE}
 rm(list=ls())
@@ -14,7 +14,7 @@ library(car)
 load(here::here('markdowns','lab_5_data','mcshapiro.test.RData'))
 ```
 
-# Test for the mean of paired multivariate Gaussian observations
+## Test for the mean of paired multivariate Gaussian observations
 
 Example 6.1 JW + exercise 6.1 JW
 
@@ -51,7 +51,7 @@ points(0,0, pch=19, col='grey35')
 
 Now we can proceed as we already know, but working on `D`
 
-## T2 Hotelling Test
+### T2 Hotelling Test
 $H_0$: `delta = delta.0` vs $H_1$: `delta != delta.0` with `delta.0 = c(0,0)`
 
 Test the Gaussian assumption (on `D`)
@@ -110,7 +110,7 @@ ellipse(center=D.mean, shape=D.cov/n, radius=sqrt((n-1)*p/(n-p)*qf(1-as.numeric(
 
 Now, let's communicate our results to the client. Let's build confidence intervals for linear combination of the components of the mean vector
 
-## Simultaneous T2 intervals
+### Simultaneous T2 intervals
 
 ```{r}
 IC.T2.DBOD <- c( D.mean[1]-sqrt(cfr.fisher*D.cov[1,1]/n) , D.mean[1], D.mean[1]+sqrt(cfr.fisher*D.cov[1,1]/n) )
@@ -260,7 +260,7 @@ abline(h=cfr.fisher, col = 'grey', lty = 1, lwd=2)
 abline(h=D.T2)
 ```
 
-## Bonferroni intervals
+### Bonferroni intervals
 
 ```{r}
 k <- p  # 2
@@ -418,7 +418,7 @@ legend('topright', c('Bonf. IC', 'Sim-T2 IC'), col=c('forestgreen', 'red'), lty=
 
 The Bonferroni region is now bigger than the T2 region.
 
-# Test for repeated measures
+## Test for repeated measures
 
 Exercise similar to Pb 3 of 14/09/2006.
 
@@ -602,7 +602,7 @@ P <- 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
 P
 ```
 
-# Test for the mean of two independent Gaussian populations
+## Test for the mean of two independent Gaussian populations
 
 ```{r, message=FALSE}
 rm(list=ls())
@@ -650,7 +650,7 @@ list(S1=t1.cov, S2=t2.cov, Spooled=Sp)
 
 Test $H_0$: `mu1 = mu2` vs $H_1$: `mu1 != mu2`, i.e. $H_0$: `mu1-mu2 = c(0,0)` vs $H_1$: `mu1-mu2 != c(0,0)`.
 
-## Test statistics
+### Test statistics
 
 ```{r}
 alpha   <- .01
@@ -672,7 +672,7 @@ P
 
 P-value high (we don't reject at 1%, 5%, 10%).
 
-## Simultaneous T2 intervals
+### Simultaneous T2 intervals
 
 ```{r}
 IC.T2.X1 <- c(t1.mean[1]-t2.mean[1]-sqrt(cfr.fisher*Sp[1,1]*(1/n1+1/n2)),
@@ -686,9 +686,9 @@ dimnames(IC.T2)[[2]] <- c('inf','sup')
 IC.T2
 ```
 
-# Exercises
+## Exercises
 
-## Pb 2 of 4/07/2013
+### Pb 2 of 4/07/2013
 
 The Chinese Institute of Genomics has reconstructed the genetic map of 200 Chinese individuals, among which 100 were allergic to almonds and 100 were not allergic to almonds. The files `hatingalmonds.txt` and `lovingalmonds.txt` collect the presence `(1)` or absence `(0)` of 520 mutations, for the two groups respectively. The geneticist suspects that some of these mutations might be positively associated with the allergy to almonds, and for this reason they decide to compare the incidence of the 520 mutations in the two populations.
 
@@ -760,7 +760,8 @@ plot(p.BH, main='Corrected - BH')
 abline(h=.01, lwd=2, col='red')
 ```
 
-## Pb 1 of 19/01/2022
+### Pb 1 of 19/01/2022
+
 The Galician Food Association has launched an award for the Best Pulpo a la Gallega (meaning Galician-style octopus). As part of the challenge, two tasters are sent to evaluate the 30 finalist octopus dishes in A Coruna and the 30 finalist octopus dishes in Pontevedra. Files `acoruna.txt` and `pontevedra.txt` collect the evaluations on each of the finalist dishes given by the tasters in A Coruna and Pontevedra, respectively. Assume the evaluations on different dishes to be independent, and the evaluations of the two tasters on the same octopus dish to come from a bivariate Gaussian distribution.
 
 a. Perform a statistical test of level 99% to verify if the mean evaluations in the two cities differ. State and verify the model assumptions.

@@ -15,7 +15,7 @@ knitr::opts_chunk$set(fig.path = path_images,
 rm(list = ls())
 ```
 
-# LAB 9
+# LAB 9: Hierarchical Clustering and K-means
 
 ```{r message=FALSE}
 library(mvtnorm)
@@ -204,11 +204,11 @@ ea <- cor(iris.e, coph.ea)
 c("Eucl-Single" = es, "Eucl-Compl." = ec, "Eucl-Ave." = ea)
 ```
 
-Exercise: repeat the analysis with other metrics
+Exercise: repeat the analysis with other metrics.
 
-## Example 2: simulated data
+### Example 2: simulated data
 
-### Univariate case
+#### Univariate case
 
 ```{r }
 set.seed(123)
@@ -254,7 +254,7 @@ image(as.matrix(dx)[hcx$order, hcx$order], asp = 1, main = "reordered x")
 image(as.matrix(dy)[hcy$order, hcy$order], asp = 1, main = "reordered y")
 ```
 
-### Bivariate case (example of chaining effect)
+#### Bivariate case (example of chaining effect)
 
 Two clusters with a bivariate generated dataset
 
@@ -318,7 +318,7 @@ plot(X, xlab = "Var 1", ylab = "Var 2", main = "Complete linkage",
      col = ifelse(cluster.ec == 1, "red", "blue"), pch = 16, asp = 1)
 ```
 
-### Bivariate case (example of ellipsoidal clusters)
+#### Bivariate case (example of ellipsoidal clusters)
 
 ```{r }
 p <- 2
@@ -393,7 +393,7 @@ plot(X, xlab = "Var 1", ylab = "Var 2", main = "Euclidean, Complete linkage", co
 Change the mean `mu2`
 Example: `mu2 <- c(4.5,1.2)`
 
-## Example 3: earthquakes dataset
+### Example 3: `earthquakes` dataset
 
 ```{r }
 help(quakes)
@@ -442,7 +442,7 @@ rect.hclust(clustw, k=2)
 rect.hclust(clustw, k=3)
 ```
 
-### Ward-Linkage (see J-W p. 692-693)
+#### Ward-Linkage (see J-W p. 692-693)
 
 Ward considered hierarchical clustering procedures based on **minimizing the 'loss of information' from joining two groups**. This method is usually implemented with loss of information taken to be an increase in an error sum of squares criterion, **ESS**. First for a given cluster `k`, let `ESS[k]` be the sum of the squared deviations of every item in the cluster from the cluster mean (**centroid**). 
 
@@ -454,7 +454,7 @@ where `x.mean[k]` is the centroid of cluster `k`). If there are currently `K` cl
 
 Initially, each cluster consists of a single item and, if there are `N` items, `ESS[k]=0`, `k=1,2,...,N`, so `ESS=0`. At the other extreme, when all the clusters are combined in a single group of `N` items, the value of `ESS` is given by `ESS=sum_j(t(x.j-x.mean)%*%(x.j-x.mean))`, where `x.j` is the multivariate measurement associated with the `j`-th item and `x.mean` is the mean of all items.
 
-### Single linkage
+#### Single linkage
 
 ```{r }
 clusters <- cutree(clusts, 2)
@@ -464,7 +464,7 @@ clusters <- cutree(clusts, 3)
 plot3d(Q, size = 3, col = clusters + 1, aspect = F)
 ```
 
-### Average linkage
+#### Average linkage
 
 ```{r }
 clustera <- cutree(clusta, 2)
@@ -474,7 +474,7 @@ clustera <- cutree(clusta, 3)
 plot3d(Q, size = 3, col = clustera + 1, aspect = F)
 ```
 
-### Complete linkage
+#### Complete linkage
 
 ```{r }
 clusterc <- cutree(clustc, 2)
@@ -484,7 +484,7 @@ clusterc <- cutree(clustc, 3)
 plot3d(Q, size = 3, col = clusterc + 1, aspect = F)
 ```
 
-### Ward linkage
+#### Ward linkage
 
 ```{r }
 clusterw <- cutree(clustw, 2)
@@ -494,7 +494,7 @@ clusterw <- cutree(clustw, 3)
 plot3d(Q, size = 3, col = clusterw + 1, aspect = F)
 ```
 
-### K-means method
+## K-means method
 
 Simulated data
 
@@ -549,7 +549,7 @@ for (i in 1:iter.max) {
 }
 ```
 
-Back to the earthquakes dataset
+### K-means for the `earthquakes` dataset
 
 In automatic, command `kmeans()`
 

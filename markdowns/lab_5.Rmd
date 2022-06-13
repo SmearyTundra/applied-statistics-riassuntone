@@ -14,9 +14,9 @@ library(car)
 library(mvtnorm)
 ```
 
-# Box-Cox transformations
+## Box-Cox transformations
 
-## Univariate Box-Cox transformation (Johnson-Wichern Chap. 4.8).
+### Univariate Box-Cox transformation (Johnson-Wichern Chap. 4.8).
 
 The Box-Cox transformations are based on the family of power transformation, for $x>0$.
 $$
@@ -75,7 +75,7 @@ points(1,0,pch=19,col='black')
 - For $\lambda<1$: observations $<1$ are "spread", observations $>1$ are "shrinked"
 - For $\lambda>1$: observations $<1$ are "shrinked", observations $>1$ are "spread"
 
-### A trivial example
+#### A trivial example
 
 ```{r}
 n <- 100
@@ -107,7 +107,7 @@ shapiro.test(x)
 shapiro.test(bc.x)
 ```
 
-## Multivariate Box-Cox transformation (Johnson-Wichern Cap.4.8)
+### Multivariate Box-Cox transformation (Johnson-Wichern Cap.4.8)
 
 Similar to univariate transformation, but jointly on all the variables
 
@@ -256,7 +256,7 @@ High p-value for the transformed data: with the obtained transformation we have 
 detach(b)
 ```
 
-## Box-Cox transformation on the dataset `stiff`
+### Box-Cox transformation on the dataset `stiff`
 
 ```{r}
 stiff <- read.table(here::here('markdowns','lab_5_data','stiff.dat'))
@@ -272,7 +272,7 @@ BC.z <- bcPower(stiff[,3], lambda.mult$lambda[3])
 BC.w <- bcPower(stiff[,4], lambda.mult$lambda[4])
 ```
 
-### Plot of the original variables
+#### Plot of the original variables
 
 ```{r}
 attach(stiff)
@@ -310,7 +310,7 @@ qqline(V4)
 detach(stiff)
 ```
 
-### Plot of the transformed variables
+#### Plot of the transformed variables
 
 ```{r}
 par(mfrow=c(2,4))
@@ -373,7 +373,7 @@ Alternative approaches:
 - Asymptotics
 - Non-parametrics (e.g., permutation tests)
 
-# Tests and confidence regions for the mean of a multivariate Gaussian
+## Tests and confidence regions for the mean of a multivariate Gaussian
 
 Example with simulated data from a bivariate Gaussian
 
@@ -406,7 +406,7 @@ Premise: general rule to perform a test
   1. Having set the level of the test, verify whether the test statistics belongs to the region of rejection (i.e., if there is statistical evidence to reject $H_0$)
   2. Compute the p-value of the test
 
-## Test on the mean of level `alpha=1%`
+### Test on the mean of level `alpha=1%`
 
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1,0)`
 
@@ -489,7 +489,7 @@ The confidence region of level `1-alpha` contains all the `mu0` that we would ac
 
 Note: by definition, the confidence region of level `1-alpha` produces ellipsoidal regions that contain the true mean `100(1-alpha)%` of the times. If $H_0$ is true (i.e., `mu0` is  the true mean), those ellipsoidal regions will contain `mu0` `100(1-alpha)%` of the times
 
-## Asymptotic test on the mean (`n` large)
+### Asymptotic test on the mean (`n` large)
 
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1,0)` (same as before).
 
@@ -573,13 +573,13 @@ points(x.mean[1], x.mean[2],
        pch = 16, col = 'red', cex=1.5)
 ```
 
-## Confidence intervals
+### Confidence intervals
 
 **How would we communicate the results?**
 
 For instance, we could provide **confidence intervals** along interesting directions (if they don't contain the mean under $H_0$, it means that we reject the associated univariate test along that direction)
 
-### Simultaneous T2 confidence intervals
+#### Simultaneous T2 confidence intervals
 
 Let's try with simultaneous T2 confidence intervals on the coordinate directions.
 
@@ -609,7 +609,7 @@ ellipse(x.mean, shape=x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, center.pc
 rect(T2[1,1],T2[2,1],T2[1,3],T2[2,3], border='red', lwd=2)
 ```
 
-### Simultaneous Bonferroni confidence intervals
+#### Simultaneous Bonferroni confidence intervals
 
 Let's try with **Bonferroni confidence intervals**
 
@@ -643,7 +643,7 @@ legend('topleft', c('Rej. Reg.', 'Conf. Reg','T2-sim', 'Bonferroni'),
 
 Remark: if we wanted to compute additional Bonferroni intervals along other directions, we would need to re-compute all the Bonferroni intervals with another correction `k`.
 
-# Example: analysis of a real dataset (dataset `stiff`)
+## Example: analysis of a real dataset (dataset `stiff`)
 
 ```{r}
 stiff <- read.table(here::here('markdowns','lab_5_data','stiff.dat'))
@@ -677,9 +677,9 @@ p <- dim(stiff)[2]
 
 ```
 
-## Test for the mean at level 5%
+### Test for the mean at level 5%
 
-### Formulate the test
+#### Formulate the test
 
 $H_0$: `mu = mu0` vs $H_1$: `mu != mu0` with `mu0=c(1850, 1750, 1500, 1700)`
 
@@ -688,7 +688,7 @@ mu0   <- c(1850, 1750, 1500, 1700)
 alpha <- 0.05
 ```
 
-### Compute the test statistics
+#### Compute the test statistics
 
 ```{r}
 x.mean   <- colMeans(stiff)
@@ -698,7 +698,7 @@ x.invcov <- solve(x.cov)
 x.T2       <- n * (x.mean-mu0) %*% x.invcov %*% (x.mean-mu0) 
 ```
 
-### Verify if the test statistics belongs to the rejection region
+#### Verify if the test statistics belongs to the rejection region
 
 ```{r}
 cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
@@ -707,14 +707,14 @@ x.T2 < cfr.fisher
 
 We accept $H_0$ at 5%.
 
-### Compute the p-value
+#### Compute the p-value
 
 ```{r}
 P <- 1-pf(x.T2*(n-p)/((n-1)*p), p, n-p)
 P
 ```
 
-## Confidence region for the mean of level 95%
+### Confidence region for the mean of level 95%
 
 1. Identify the type of region of interest. CR for the mean (ellipsoidal region) `{m \in R^4 s.t. n * (x.mean-m)' %*% x.invcov %*% (x.mean-m) < cfr.fisher}`
 2. Characterize the region: compute the center, direction of the principal axes, length of the axes
@@ -744,7 +744,7 @@ We plot the projections of the ellipsoid in some directions of interest (e.g. th
 
 We plot the simultaneous T2 confidence intervals in each direction of interest (with global coverage `alpha`).
 
-### Simultaneous T2 intervals on the components of the mean with global level 95%
+#### Simultaneous T2 intervals on the components of the mean with global level 95%
 
 ```{r}
 T2 <- cbind(inf = x.mean - sqrt(cfr.fisher*diag(x.cov)/n),
@@ -768,7 +768,7 @@ Is `mu0` inside the rectangular region?
 
 Yes, it is, because it is inside all the T2-intervals.
 
-### Bonferroni intervals on the components of the mean with global level 95%
+#### Bonferroni intervals on the components of the mean with global level 95%
 
 ```{r}
 k <- p

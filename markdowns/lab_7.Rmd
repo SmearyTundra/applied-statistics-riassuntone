@@ -4,11 +4,8 @@ editor_options:
   chunk_output_type: console
 ---
 \newpage
-# LAB 7 (04/04/2022) 
---------------------
-TOPICS:
-One-way ANOVA and MANOVA
-Two-way ANOVA and MANOVA
+
+# LAB 7: One-way and Two-way ANOVA/MANOVA
 
 ```{r, message=FALSE}
 rm(list=ls())

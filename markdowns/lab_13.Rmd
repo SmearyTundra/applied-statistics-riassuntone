@@ -4,10 +4,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r }
-```
-
-## Geostatistics
+# LAB 13: Geostatistics
 
 ```{r message=FALSE}
 rm(list=ls())
@@ -33,7 +30,7 @@ v.f <- function(x, ...){100-cov.spatial(x, ...)}
 v.f.est <- function(x,C0, ...){C0-cov.spatial(x, ...)}
 ```
 
-### Exploratory Analysis and Variogram Estimation
+## Exploratory Analysis and Variogram Estimation
 
 The `meuse` is a classical geostatistical data set used frequently to demonstrate various geostatistical analysis steps. The point data set consists of 155 samples of top soil heavy metal concentrations (ppm), along with a number of soil and landscape variables. The samples were collected in a flood plain of the river Meuse, near the village Stein (The Netherlands).
 
@@ -75,7 +72,7 @@ plot(meuse, add = TRUE)
 title('meuse river geostatistical data')
 ```
 
-#### Histogram of `zinc` variable
+### Histogram of `zinc` variable
 
 ```{r }
 hist(meuse$zinc, breaks=16, col="grey", main='Histogram of Zn', prob = TRUE, xlab = 'Zn')
@@ -95,9 +92,9 @@ xyplot(log(zinc) ~ sqrt(dist), as.data.frame(meuse))
 
 Negative correlation: lower distance from the river => higher level of zinc
 
-### Estimating Spatial Correlation
+## Estimating Spatial Correlation
 
-#### Variogram Analysis
+### Variogram Analysis
 
 Sample variogram (binned estimator)
 
@@ -143,7 +140,7 @@ Useful for data sets that have much information on short distance variability
 plot(variogram(log(zinc) ~ 1, meuse, cutoff = 1000, width = 1000/5),pch=19)
 ```
 
-#### Variogram modeling
+### Variogram modeling
 
 List of parametric isotropic variogram models
 
@@ -250,9 +247,9 @@ v.anis <- vgm(.6, "Sph", 1600, .05, anis=c(45, 0.3))
 print(plot(v.dir, v.anis, pch=19))
 ```
 
-### Spatial Prediction and Kriging
+## Spatial Prediction and Kriging
 
-#### Stationary Univariate Spatial Prediction (Ordinary Kriging)
+### Stationary Univariate Spatial Prediction (Ordinary Kriging)
  
 Prediction at a single new location
 
@@ -312,7 +309,7 @@ lz.ok <- predict(g.tr, meuse.grid, BLUE = FALSE)
 spplot(lz.ok)
 ```
 
-#### Non-stationary Univariate Spatial Prediction (Universal Kriging)
+### Non-stationary Univariate Spatial Prediction (Universal Kriging)
 
 The hypothesis of spatially constant mean may be too restrictive!
 We now use as covariate the square root of the distance from the river Meuse to fit the variogram on the residuals, one should take into account the spatial dependence while estimating the trend component by using GLS.
@@ -405,9 +402,9 @@ curve(v.f.est(x, C0=v.gls.fit[2,2]+v.gls.fit[1,2],
       main = "Variogram model",add=TRUE,col='steelblue',lwd=2, ylim=c(0,110))
 ```
 
-### Exercises From Past Exams
+## Exercises From Past Exams
 
-#### `fluoruro.txt`
+### `fluoruro.txt`
 
 One of the most relevant consequences of the eruption of volcano Eyjafjoll (in Iceland), in 2010, is the contamination by fluoride. The latter is due to the deposit on the ground of the ash released in the atmosphere during the eruption. The file `fluoruro.txt` reports the coordinates of 50 measurement sites $s_i, i=1,...,50$, the corresponding concentrations of fluoride (ppm) $F(s_i)$ and the distance $D_{s_i}$ of each site $s_i$ from the crater of the volcano. Denoting by delta a zero-mean, second-order stationary and isotropic random field:
 
@@ -478,7 +475,7 @@ predict(g.t, s0, BLUE = TRUE)
 detach(data)
 ```
 
-#### `radioville.txt`
+### `radioville.txt`
 
 The file `radioville.txt` reports the information on 158 control units in the area around the nuclear power plant of Radioville. At each site, available data consist of: radioactivity levels [Bq], longitude [°N], latitude [°W] and type of soil [urban/vegetation]. Denoting by $s_i$ the $i$-th site, by $R$ the radioactivity level, by $\varepsilon$ a weakly stationary random field and by $D$ a dummy urban/vegetation.
 

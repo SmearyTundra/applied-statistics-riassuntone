@@ -787,7 +787,7 @@ table(folds)
 function that performs the prediction for `regsubsets`
 
 ```{r }
-predict.regsubsets <- function(object,newdata,id){
+  predict.regsubsets <- function(object,newdata,id){
   form <- as.formula(object$call[[2]])
   mat <- model.matrix(form,newdata)
   coefi <- coef(object,id=id)
@@ -1082,6 +1082,7 @@ text(prune.boston,pretty=0)
 ```
 
 ### Pb3 of 09/02/2022
+
 The file `wine.txt` reports the data on the alcohol content in 179 bottles of wine. For the alcohol content consider a linear model, accounting for the sugar content of grapes, and for type of wine ('Red', 'Rose', 'White'): $\texttt{alcohol}_g = b_{0g} + b_{1g}\cdot \texttt{sugar} + \varepsilon$, with $\varepsilon\sim N(0, \sigma^2)$ and $g$ the grouping structure induced by the type of wine.
 
 a. Estimate the parameters of the model ($b_{0g}, b_{1g}, \sigma$). Verify the model assumptions, reporting any plot you consider important.

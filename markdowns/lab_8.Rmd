@@ -4,11 +4,8 @@ editor_options:
   chunk_output_type: console
 ---
 \newpage
-# LAB 8 (22/04/2022)
 
-TOPICS:
-Linear and Quadratic Discriminant Analysis
-Support Vector Machines
+# LAB 8: LDA, QDA and SVM
 
 ```{r, message=FALSE}
 rm(list=ls())
@@ -141,6 +138,7 @@ cyto.lda
 ```
 
 Note: **if we don't specify the prior probabilities, they are estimated from the sample** 
+
 #### Posterior probability and classification
 
 For `x=0`
