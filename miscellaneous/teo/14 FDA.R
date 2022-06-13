@@ -7,7 +7,7 @@ library(fda)
 
 
 norder <- 5      # spline order (4th order polynomials)
-degree <- m-1    # spline degree
+degree <- norder-1    # spline degree
 nbasis <- 9      # how many basis we want
 
 basis <- create.bspline.basis(rangeval=c(0, 1),
