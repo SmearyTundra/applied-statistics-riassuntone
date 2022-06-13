@@ -8,6 +8,14 @@ airfoil <- read.table('airfoil.txt', header=T)
 head(airfoil)
 airfoil$velocity <- factor(airfoil$velocity)
 
+### Model:
+### distance = beta_0 + beta_1 * speed + beta_2 * speed^2 + Eps
+### (linear in the parameters!)
+
+### Assumptions:
+## 1) Parameter estimation: E(Eps) = 0  and  Var(Eps) = sigma^2 
+## 2) Inference:            Eps ~ N(0, sigma^2)
+
 ### Assumptions Parameter estimation: E(Eps) = 0  and  Var(Eps) = sigma^2 
 
 #regression
