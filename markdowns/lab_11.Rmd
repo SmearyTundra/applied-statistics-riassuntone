@@ -14,7 +14,7 @@ knitr::opts_chunk$set(fig.path = path_images,
 					  cache = TRUE)
 ```
 
-# LAB 11 (13/05/2022)
+# LAB 11: Collinearity, PCA, Ridge, Lasso and CARTs
 
 ```{r }
 par(mfrow=c(1,1))
