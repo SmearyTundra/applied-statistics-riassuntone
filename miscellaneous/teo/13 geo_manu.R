@@ -66,13 +66,13 @@ predict(g.no, hotels[1,], BLUE = TRUE)$var1.pred
 
 ##### PREDICTION FOR GROUP 1  
 
-s1=hotels[1,]
+s1 = hotels[1,]
 
-w1= predict(g.t, s1,BLUE = TRUE)$var1.pred
+w1 = predict(g.t, s1, BLUE = TRUE)$var1.pred
 
-s2=hotels[2,]
+s2 = hotels[2,]
 
-w2= predict(g.t, s2,BLUE = TRUE)$var1.pred
+w2 = predict(g.t, s2, BLUE = TRUE)$var1.pred
 
 a1 = (w2-w1)/(s2$distance - s1$distance)
 a0 = w1 - a1*s1$distance
