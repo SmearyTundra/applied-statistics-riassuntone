@@ -831,7 +831,7 @@ title ('Original function first derivatives')
 
 Without alignment, let's try with 3 clusters
 
-```{r }
+```{r warning=FALSE}
 set.seed(4)
 fdakma_example_noalign_0der <- kma(
   x=x, y0=y0, n.clust=3,
@@ -843,13 +843,13 @@ fdakma_example_noalign_0der <- kma(
   #, seeds=c(1, 11, 21) # you can give a little help to the algorithm...
 )
 
-kma.show.results(fdakma_example_noalign_0der)
+# kma.show.results(fdakma_example_noalign_0der)
 fdakma_example_noalign_0der$labels
 ```
 
 We might want to use a similarity measure which considers first derivatives
 
-```{r }
+```{r warning=FALSE}
 set.seed(5)
 fdakma_example_noalign_1der <- kma(
   x=x, y0=y0, y1=y1, n.clust=3,
@@ -861,7 +861,7 @@ fdakma_example_noalign_1der <- kma(
   #, seeds=c(1, 11, 21) # you can give a little help to the algorithm...
 )
 
-kma.show.results(fdakma_example_noalign_1der)
+# kma.show.results(fdakma_example_noalign_1der)
 fdakma_example_noalign_1der$labels
 ```
 
@@ -874,7 +874,7 @@ table(fdakma_example_noalign_0der$labels,
 
 Let's allow for alignment. Result of `kma` with 2 clusters, allowing `affine` transformation for the abscissas and considering `d1.pearson` as `similarity.method`.
 
-```{r }
+```{r warning=FALSE}
 set.seed(1)
 fdakma_example <- kma(
   x=x, y0=y0, y1=y1, n.clust=2,
@@ -886,7 +886,7 @@ fdakma_example <- kma(
   #seeds=c(1, 21) # you can give a little help to the algorithm...
 )
 
-kma.show.results(fdakma_example)
+# kma.show.results(fdakma_example)
 ```
 
 Much better: high within group similarity after alignment, the boxplot is concentrated on 1.
@@ -921,7 +921,7 @@ for(i in 1:30)(
 
 How to choose the number of clusters and the warping method
 
-```{r }
+```{r warning=FALSE}
 help(kma.compare)
 
 kma.compare_example <- kma.compare (
