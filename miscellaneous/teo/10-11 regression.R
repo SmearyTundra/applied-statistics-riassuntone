@@ -21,7 +21,8 @@ airfoil$velocity <- factor(airfoil$velocity)
 #regression
 fit1 <- lm(sound ~ frequency*velocity, data = airfoil)   #I(velocity^2)
 summary(fit1)
-sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
+summary(fit2)$sigma^2 #sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
+fit1$coefficients
 shapiro.test(fit1$residuals)
 vif(fit1) # high => highly collinear with the other variables in the model
 par(mfrow=c(2,2))
