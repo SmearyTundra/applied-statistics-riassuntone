@@ -968,7 +968,8 @@ a.
 fit <- glm(factor(Tipo) ~ Anno, data=TV, family='binomial')
 summary(fit)
 
-plot(Anno, as.numeric(factor(Tipo))-1, data=TV)
+plot(TV$Anno, as.numeric(factor(TV$Tipo))-1)
+
 lines(seq(1997, 2010, by=0.1),
       predict(fit, data.frame(Anno=seq(1997,2010,by=0.1)), type='response'))
 

@@ -71,7 +71,7 @@ Set parameters
 
 ```{r }
 norder <- 5      # spline order (4th order polynomials)
-degree <- m-1    # spline degree
+degree <- norder-1    # spline degree
 nbasis <- 9      # how many basis we want
 ```
 
@@ -178,7 +178,7 @@ points(abscissa, truecurve$X0vera, type="l")
 ```{r }
 nbasis <- 7
 
-basisbis <- create.bspline.basis(c(0, 1), nbasis, m)
+basisbis <- create.bspline.basis(c(0, 1), nbasis, norder)
 
 par(mfrow=c(1, 1))
 plot(basisbis)
@@ -216,7 +216,7 @@ points(abscissa, Xsp2, type="l", col="blue", lwd=2)
 ```{r }
 nbasis <- 30
 
-basister <- create.bspline.basis(c(0, 1), nbasis, m)
+basister <- create.bspline.basis(c(0, 1), nbasis, norder)
 par(mfrow=c(1, 1))
 plot(basister)
 
@@ -256,7 +256,7 @@ Generalized cross-validation
 nbasis <- 6:30
 gcv <- numeric(length(nbasis))
 for (i in 1:length(nbasis)){
-  basis <- create.bspline.basis(c(0, 1), nbasis[i], m)
+  basis <- create.bspline.basis(c(0, 1), nbasis[i], norder)
   gcv[i] <- smooth.basis(abscissa, Xobs0, basis)$gcv
 }
 par(mfrow=c(1, 1))
@@ -274,7 +274,7 @@ integrationinterval <- 11:90
 bias <- rep(NA, len=length(nbasis))
 var <- rep(NA, len=length(nbasis))
 for (j in 1:length(nbasis)){
-  basis <- create.bspline.basis(c(0, 1), nbasis[j], m)
+  basis <- create.bspline.basis(c(0, 1), nbasis[j], norder)
   basismat <- eval.basis(abscissa, basis)
   S <- basismat %*% solve(t(basismat) %*% basismat) %*% t(basismat)
   bias[j] <- sum((truecurve$X0vera-S %*% truecurve$X0vera)[integrationinterval])
@@ -296,7 +296,7 @@ legend('topright', c("Bias", "Var", "MSE"), col=c("black", "red", "green"),
 # breaks <- abscissa[((0:50)*2)+1]
 breaks <- abscissa
 
-basis <- create.bspline.basis(breaks, norder=m)
+basis <- create.bspline.basis(breaks, norder=norder)
 functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-8)
 ```
 
@@ -1204,7 +1204,7 @@ lines(eval.1[, 35], lwd=4, col=2) #temperature profile for Resolute
 
 coord <- CanadianWeather$coordinates
 coord[, 2] <- -coord[, 2]
-plot(coord[, 2:1], col=0)
+plot(coord[, 2:1], col=1)
 text(coord[, 2:1], rownames(coord))
 ```
 
