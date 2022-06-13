@@ -56,3 +56,9 @@ knitr::opts_chunk$set(fig.path = path_images,
 
 ```{r child=here::here("markdowns","lab_12.rmd")}
 ```
+
+```{r child=here::here("markdowns","lab_13.rmd")}
+```
+
+```{r child=here::here("markdowns","lab_14.rmd")}
+```
