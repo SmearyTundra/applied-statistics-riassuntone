@@ -101,6 +101,38 @@ cfr.t2 <- qt(1-alpha/(2*k), n2-1)
 ICm2 <- c(m2[2] - sqrt(var2/n2)*cfr.t2, m2[2], m2[2]  + sqrt(var2/n2)*cfr.t2)
 ICv2 <- c((n2-1)*var2/qchisq(1-alpha/k, n2-1), var2, (n2-1)*var2/qchisq(alpha/k, n2-1))
 
+# FASTER
+
+
+alpha <- 0.05
+k <- 6 # number of CI
+g <- 3 # number of clusters
+
+IC={}
+Ps={}
+for(i in 1:g){
+    X <- data[cluster.dl.cut==i,1] # i need only the major axis
+    n <- length(X)
+    Ps <- c(Ps,shapiro.test(X)$p)
+    x.mean   <- mean(X)
+    x.cov    <- var(X)
+    
+    ICmean <- c(inf    = x.mean - sqrt(x.cov/n) * qt(1 - alpha/(2*k), n-1),
+                center = x.mean,
+                sup    = x.mean + sqrt(x.cov/n) * qt(1 - alpha/(2*k), n-1))
+    
+    ICvar <- c(inf     = x.cov*(n-1) / qchisq(1 - alpha/(2*k), n-1),
+               center  = x.cov,
+               sup     = x.cov*(n-1) / qchisq(alpha/(2*k), n-1))
+    
+    IC <- rbind(IC,
+                ICmean,
+                ICvar)
+}
+Ps
+IC
+
+
 ##############
 ### K-MEANS 
 #############

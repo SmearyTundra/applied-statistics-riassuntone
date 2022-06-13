@@ -17,6 +17,6 @@ BLUE = FALSE -> PREDICTION
 
 Model assumptions
 
-- The ordinary Kriging model assumes II order stationariety ( E[z_s] = m for any s and Cov(z_s1,z_s2) = C(h) where h = norm(s_1 - s_2) ),and isotropy
+- The ordinary Kriging model assumes II order stationariety ( E[z_s] = m for any s and Cov(z_s1,z_s2) = C(h) where h = norm(s_1 - s_2) ), and isotropy. We also assume that C(•) is known.
 
-- The universal Kriging model assumes z_s = m_s + delta_s for any s in D (domain) where m_s is called drift and describes the non constant spacial mean variation. Moreover we assume E[delta_s] = 0 for any s in D (so that E[z_s] = m_s) and that Cov(z_s1,z_s2) = Cov(delta_s1,delta_s2) for any pair.
+- The universal Kriging model assumes z_s = m_s + delta_s for any s in D (domain) where m_s is called drift and describes the non constant spacial mean variation. Moreover we assume E[delta_s] = 0 for any s in D (so that E[z_s] = m_s) and that Cov(z_s1,z_s2) = Cov(delta_s1,delta_s2) for any pair. We also assume that C(•) is known and that m_s follows a linear model m_s(t) = sum_l=0^L a_l(t) f_l(s) for s in D and t in T, where f are known functions of s and a_l are coefficients independent from the spacial location.
