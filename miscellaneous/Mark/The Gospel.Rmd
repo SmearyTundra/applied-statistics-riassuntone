@@ -1,0 +1,2204 @@
+---
+title: "The Gospel"
+author: "Mark"
+date: '1st semester A.G.'
+output: pdf_document
+params:
+  dataANOVA_txt: 
+    label: "Input ANOVA dataset:"
+    value: chickwts.txt
+    input: file
+editor_options: 
+  markdown: 
+    wrap: 100
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Foreword
+
+This is an R Markdown document. It summarizes the lab session of the course of Applied Statistics
+held by professor Secchi. We remember that Grasselli's mercy, grace and favour are made available
+for us through the intercession of Secchi.
+
+## Table of contents
+
+## Header of all scripts
+
+```{r header}
+library(car)
+library(MASS)
+library(class)
+library(sp)
+library(lattice)
+library(geoR)
+library(gstat)
+library(fda)
+library(fields)
+library(fdakma)
+library(glmnet)
+library(e1071) # for svm
+rm(list = ls()) 
+load('mcshapiro.test.RData')
+df = read.table("revenues.txt", header = TRUE) 
+head(df)
+```
+
+```{r install geoR}
+install.packages("devtools") 
+require(devtools) 
+
+install_version("RandomFieldsUtils", version = "1.1.5", repos = "http://cran.r-project.org") 
+install_version("RandomFields", version = "3.3.14", repos = "http://cran.r-project.org") 
+install_version("geoR", version = "1.8-1", repos = "http://cran.r-project.org")
+```
+
+## PCA TO CHECK
+
+```{r pca}
+df = read.table("tourists.txt")
+head(df)
+
+label = df[,1:2]
+value = df[,-(1:2)]
+
+n = dim(value)[1]
+p = dim(value)[2]
+
+# Boxplot
+boxplot(value, las=2, col='gold')
+
+## if scale not comparable must be rescaled
+# value = data.frame(scale(value))
+
+# We observe that the variability of the number of nights in 3,4 stars hotels and residences
+# is higher than that of the others. This may influence the PCA
+
+# We perform the PCA on original data
+pc_value = princomp(value, scores=T)
+summary(pc_value)
+
+# To obtain the rows of the summary:
+# standard deviation of the components
+pc_value$sd
+# proportion of variance explained by each PC
+pc_value$sd^2/sum(pc_value$sd^2)
+# cumulative proportion of explained variance
+cumsum(pc_value$sd^2)/sum(pc_value$sd^2)
+
+
+load_value = pc_value$loadings
+load_value
+
+load_value[,1:8]
+
+# graphical representation of the loadings of the first 3 principal components
+par(mfrow = c(3,1))
+for(i in 1:3) barplot(load_value[,i], ylim = c(-1, 1))
+
+# filter the most significant loadings
+par(mar = c(1,3,0,2), mfrow = c(3,1))
+for(i in 1:3) barplot(ifelse(abs(load_value[,i]) < 0.3, 0, load_value[,i]) , ylim = c(-1, 1));abline(h=0)
+
+# Interpretation of the loadings:
+# First PCs: weighted average of the number of nights in 3,4 stars hotel and residences
+# Second PCs: contrast between the number of nights in 3 and 4 stars hotel
+# Third PC: residences
+
+# The loadings reflect the previous observation: the first 3 PCs are 
+# driven by the variables displaying the highest variability
+
+# Explained variance
+layout(matrix(c(2,3,1,3),2,byrow=T))
+plot(pc_value, las=2, main='Principal components')
+barplot(sapply(value,sd)^2, las=2, main='Original Variables', ylab='Variances')
+plot(cumsum(pc_value$sd^2)/sum(pc_value$sd^2), type='b', axes=F, xlab='number of components', 
+     ylab='contribution to the total variance', ylim=c(0,1))
+abline(h=1, col='blue')
+abline(h=0.8, lty=2, col='blue')
+box()
+axis(2,at=0:10/10,labels=0:10/10)
+axis(1,at=1:ncol(value),labels=1:ncol(value),las=2)
+
+## Interpretation of the loadings:
+# First PCs: weighted average of the number of nights in 3,4 stars hotel and residences
+# Second PCs: contrast between the number of nights in 3 and 4 stars hotel
+# Third PC: residences
+
+# The loadings reflect the previous observation: the first 3 PCs are 
+# driven by the variables displaying the highest variability
+
+# scatter around first 2 PC
+par(mfrow = c(1,1))
+value_scores = data.frame(pc_value$scores)
+plot(value_scores[,1:2])
+abline(h=0, v=0, lty=2, col='grey')
+
+# adding color by factors
+fact_col = factor(df[,2])
+plot(value_scores[,1:2], pch=16, col = rainbow(length(levels(fact_col))))
+abline(h=0, v=0, lty=2, col='grey')
+legend('topright',levels(fact_col), fill=rainbow(length(levels(fact_col))),bty='n')
+
+library(car)
+
+par(mfrow=c(2,3))
+matplot(t(value), type='l', main = 'Data', ylim=range(value))
+meanF = colMeans(value)
+matplot(meanF, type='l', main = 'First 0 PCs', lwd=2, ylim=range(value))
+projection = matrix(meanF, dim(value)[[1]], dim(value)[[2]], byrow=T)
+for(i in 1:4)
+{
+  projection = projection + value_scores[,i] %*% t(load_value[,i])
+  matplot(t(projection), type='l', main = paste('First', i, 'PCs'), ylim=range(value))
+  matplot(meanF, type='l', lwd=2, add=T)
+}
+
+```
+
+## One way ANOVA
+
+Anova is used to dertermine if there exist a different between the mean of different groups.
+
+Hypothesis: - Normality distribution of groups (Shapiro) - Same variance (Homoschedasticity)
+(Barlett)
+
+Barlett test:
+
+H0: sigma.1 = sigma.2 = ... = sigma.n vs H1: there exist i,j s.t. sigma.i != sigma.j We obtained a
+sufficiently big p-value so that we don't reject H0. Then the ipotesy for the ANOVA are satisfied
+
+ANOVA model:
+
+H0:
+
+```{r ANOVA_one}
+# Lab 7 line 27-220
+load("mcshapiro.test.RData")
+dataANOVA = chickwts
+summary(dataANOVA)
+
+## Change this part ##
+value = dataANOVA$weight
+groups = dataANOVA$feed   # vector of factor
+
+n       = length(groups)      # total number of obs.
+ng      = table(groups)       # number of obs. in each group
+treat   = levels(groups)      # levels of the treatment
+g       = length(treat)       # number of levels (i.e., of groups)
+
+
+# Boxplot by groups
+plot(groups, value, xlab='treat', ylab='value', col='grey85', main='Dataset ANOVA')
+#dev.off()
+
+### Verify the assumptions:
+# 1)  normality (multivariate) in each group (3 tests)
+# 2)  same covariance structure (= same covariance matrix Sigma)
+PsANOVA = NULL
+varANOVA = NULL
+for (i in 1:g){
+  PsANOVA = c(PsANOVA, shapiro.test(value[ groups==treat[i] ])$p)   # look for big p-value 
+  varANOVA = c(varANOVA, var(value[ groups==treat[i] ]))
+}
+
+#Barlett test (look for big p-value) (same covariance)
+bartlett.test(value, groups)
+
+
+#ANOVA
+fit = aov(value ~ groups)
+summary(fit)
+### How to read the summary:
+#              Df   Sum Sq      Mean Sq      F value     Pr(>F)    
+#  treat      (g-1) SStreat  SStreat/(g-1)  Fstatistic  p-value [H0: tau.i=0 for every i]
+#  Residuals  (n-g) SSres     SSres/(n-g)     
+# We want small 
+
+
+## Bonferroni
+k = g*(g-1)/2
+alpha= 0.05
+
+Meang  = tapply(value, groups, mean)
+SSres = sum(residuals(fit)^2)
+S = SSres/(n-g)
+
+# CI for all the differences
+ICrange=NULL
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ICrange=rbind(ICrange,as.numeric(c(Meang[i]-Meang[j] - qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )),
+                                       Meang[i]-Meang[j] + qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )))))
+  }
+}
+
+par(mfrow=c(1,2))
+plot(groups, value, xlab='treat', ylab='value', col = rainbow(g), las=2, main='Dataset ANOVA')
+
+h = 1
+plot(c(1,g*(g-1)/2),range(ICrange), pch='',xlab='pairs treat', ylab='Conf. Int. tau values')
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ind = (i-1)*g-i*(i-1)/2+(j-i)
+    lines (c(h,h), c(ICrange[ind,1],ICrange[ind,2]), col='grey55'); 
+    points(h, Meang[i]-Meang[j], pch=16, col='grey55'); 
+    points(h, ICrange[ind,1], col=rainbow(g)[j], pch=16); 
+    points(h, ICrange[ind,2], col=rainbow(g)[i], pch=16); 
+    h = h+1
+  }}
+abline(h=0)
+
+
+## Multiple testing and Benjamini-Hockberg
+Auni = matrix(0,g,g)
+for(i in 1:g) {
+  for(j in i:g) {
+    Auni[i,j] = Meang[i]-Meang[j] + qt(1-alpha/2, n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] ) )}
+  for(j in 1:i) {
+    Auni[i,j] = Meang[j]-Meang[i] - qt(1-alpha/2, n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] ) )}
+  Auni[i,i]     = 0
+}
+
+# plot
+par(mfrow=c(1,2))
+h = 1
+plot(c(1,g*(g-1)/2),range(Auni), pch='', xlab='pairs treat', 
+     ylab='CI delta value', main='Univariate Conf. Int.', col='grey55')
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {lines (c(h,h), c(Auni[i,j],Auni[j,i])); 
+    points(h, Meang[i]-Meang[j], pch=16, col='grey55'); 
+    points(h, Auni[i,j], col=rainbow(g)[i], pch=16); 
+    points(h, Auni[j,i], col=rainbow(g)[j], pch=16); 
+    h = h+1
+}}
+abline(h=0)
+
+# Matrix of tests for the difference between all the pairs 
+P = matrix(0,g,g)
+for(i in 1:g) {
+  for(j in i:g) {
+    P[i,j] = (1-pt(abs((Meang[i]-Meang[j]) / sqrt( S * ( 1/ng[i] + 1/ng[j] ) ) ), n-g))*2}
+  for(j in 1:i) {
+    P[i,j] = (1-pt(abs((Meang[i]-Meang[j]) / sqrt( S * ( 1/ng[i] + 1/ng[j] ) ) ), n-g))*2}
+  P[i,i]     = 0
+}
+P
+# Vector of p-values
+p = P[lower.tri(P, diag = FALSE)]
+
+plot(1:k, p, ylim=c(0,1), type='b', pch=16, col='grey55', xlab='pairs treat',
+     main='P-values')
+abline(h=alpha, lty=2)
+
+# Bonferroni correction
+p.bonf = p.adjust(p, 'bonf') 
+lines(1:k, p.bonf, col='blue', pch=16, type='b')
+
+# Correction according to the false discovery rate (Benjamini-Hockberg)
+p.fdr = p.adjust(p, 'fdr')
+lines(1:k, p.fdr, col='red', pch=16, type='b')
+
+legend('topleft', c('Not corr.', 'Bonf.', 'BH'), col=c('grey55', 'blue', 'red'), pch=16)
+
+which(p.bonf<alpha)
+which(p.fdr<alpha)
+
+
+
+```
+
+## One way M-ANOVA
+
+Same hypothesis as ANOVA
+
+    p=4, g=3
+
+Model: X.ij = mu + tau.i + eps.ij; eps.ij \~ N_p(0,Sigma)\
+X.ij, mu, tau.i in R\^p
+
+Test: H0: tau.1 = tau.2 = tau.3 = (0,0,0,0)' H1: (H0)\^c
+
+Example of iris: This is a case of one-way MANOVA: four variables (Sepal.Length, Sepal.Width,
+Petal.Length, Petal.Width) observed over g=3 levels (setosa, versicolor, virginica)
+
+H0: The membership to an iris species hasn't any significant effect on the mean of X.ij (in any
+direction of R\^4) H1: There exists at least one direction in R\^4 along which at least two species
+have some feature significantly different
+
+```{r One_M-ANOVA}
+# Lab 7 lines 224-405
+load("mcshapiro.test.RData")
+dataMANOVA = iris
+summary(dataMANOVA)
+# (p=4, g=3)
+id_factor = c(5)
+id_categories = c(1,2,3,4)
+for (i in id_factor)
+  dataMANOVA[,i] = factor(dataMANOVA[,i])   #, labels=c('L','H')
+summary(dataMANOVA)
+
+value = dataMANOVA[, id_categories]
+groups = dataMANOVA[, id_factor]
+
+p_cat = length(id_categories)   # number of categories / columns
+g = length(levels(groups))
+treat   = levels(groups)
+n = length(value[,1])
+
+# May add boxplots by groups or category
+
+### Verify the assumptions:
+# 1)  normality (multivariate) in each group (3 tests)
+Ps = NULL
+for(i in 1:g)
+  Ps = c(Ps, mcshapiro.test(dataMANOVA[which(groups == treat[i]),id_categories])$p) # look for big p-value 
+Ps
+
+# 2) same covariance structure (= same covariance matrix Sigma)
+Smatrixes = list()
+for (level in levels(groups)){
+  Smatrixes[[length(Smatrixes)+1]] = cov(value[groups == level,])
+}
+
+color_mat = matrix(unlist(Smatrixes), ncol = p_cat, byrow = T)
+par(mfrow=c(1,length(Smatrixes)))
+for (i in 1:length(Smatrixes)){
+  image(Smatrixes[[i]], col=heat.colors(100),main=paste('Cov S',i, sep=''), asp=1, axes = FALSE, breaks = quantile(color_mat, (0:100)/100, na.rm=TRUE))
+}
+# Note: We can verify the assumptions a posteriori on the residuals of 
+#       the estimated model 
+
+
+# One-way MANOVA 
+fit = manova(as.matrix(value) ~ groups)
+summary.manova(fit,test="Wilks")
+# Exact tests for p<=2 or g<=3 already implemented in R
+# Reject H0  (equal means) if small p-value (OK)
+
+
+# Via ANOVA: for each of the p=4 variables we perform an ANOVA test
+#            to verify if the membership to a group has influence
+#            on the mean of the variable (we explore separately the
+#            4 axes directions in R^4)
+summary.aov(fit)
+# Each of the 4 variables is significantly influenced by the  
+# factor species.
+# Note: this analysis does NOT say: 
+#       a) which group differ
+#       b) with respect to which variables the groups in (a) differ
+# => As for the ANOVA, we build confidence intervals (many more!)
+
+
+## Via Bonferroni
+alpha = 0.05
+k = p_cat*g*(g-1)/2
+qT = qt(1-alpha/(2*k), n-g)
+ng      = table(groups) 
+
+W = summary.manova(fit)$SS$Residuals
+
+mMANOVA  = sapply(value,mean)         # estimates mu
+Meang = NULL
+for (level in levels(groups)){
+  Meang = rbind(Meang, sapply(value[groups==level,],mean) )
+}
+
+ICrange=NULL      # Ogni riga un gruppo, prima gli inf e poi i sup
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ICrange=rbind(ICrange,as.numeric(c(Meang[i,]-Meang[j,] - qT * sqrt( diag(W)/(n-g) * ( 1/ng[i] + 1/ng[j] )),
+                                       Meang[i,]-Meang[j,] + qT * sqrt( diag(W)/(n-g) * ( 1/ng[i] + 1/ng[j] )))))
+  }}
+ICrange_plot = NULL
+for (i in 1:g)
+
+# Boxplot with Bonferroni's intevals
+par(mfrow=c(2,p_cat))
+for (i in id_categories)
+  boxplot(dataMANOVA[,i]~groups, main=colnames(dataMANOVA)[i], col = rainbow(g))
+for (id_cat in 1:p_cat){
+  h = 1
+  plot(c(1,g*(g-1)/2),range(ICrange), pch='',xlab='pairs treat', ylab='Conf. Int. tau values')
+  for(i in 1:(g-1)) {
+    for(j in (i+1):g) {
+      ind = (i-1)*g-i*(i-1)/2+(j-i)
+      lines (c(h,h), c(ICrange[ind,id_cat],ICrange[ind,id_cat+p_cat]), col='grey55'); 
+      points(h, Meang[i,id_cat]-Meang[j,id_cat], pch=16, col='grey55'); 
+      points(h, ICrange[ind,id_cat], col=rainbow(g)[j], pch=16); 
+      points(h, ICrange[ind,id_cat+p_cat], col=rainbow(g)[i], pch=16); 
+      h = h+1
+    }}
+  abline(h=0)
+}
+
+```
+
+## Two-ways ANOVA
+
+Same hypothesis as ANOVA
+
+p = Categories g = (i) Levels of treatment 1 b = (j) Levels of treatment 2 n = (k) Number of
+elements in each combined group
+
+Model with interaction (complete model): X.ijk = mu + tau.i + beta.j + gamma.ij + eps.ijk; eps.ijk
+\~ N(0,sigma\^2), i=1,2 (effect station), j=1,2 (effect gasoline)
+
+(p=1, g=2, b=2)
+
+```{r Two_ANOVA}
+# LAB 7 lines 407 - 580
+load("mcshapiro.test.RData")
+data2ANOVA = read.table("kimono.txt", header = TRUE)
+id_factor = c(2,3)
+id_categories = c(1)
+for (i in id_factor)
+  data2ANOVA[,i] = factor(data2ANOVA[,i])
+data2ANOVA$combined = factor(paste(data2ANOVA$city, data2ANOVA$type))
+summary(data2ANOVA)
+
+## Change this part
+value = data2ANOVA$value    # if matrix see MANOVA One
+first = data2ANOVA$city
+second = data2ANOVA$type
+combined=data2ANOVA$combined
+
+p_cat = 1   # number of categories
+g = length(levels(first))
+b = length(levels(second))
+n = length(value)/(g*b)    # number of elements in each combined group
+
+### Verify the assumptions:
+# 1)  normality (multivariate) in each combined group
+Ps_combined = NULL
+for(level in levels(combined)){
+  Ps_combined = c(Ps_combined, mcshapiro.test(as.data.frame(data2ANOVA[combined == level,id_categories]))$p) # look for big p-value 
+}
+Ps_combined # look for big p-value 
+
+# 2) same covariance structure (= same covariance matrix Sigma)
+var2ANOVA = NULL
+for (level in levels(combined)){
+  var2ANOVA = c(var2ANOVA, var(value[ combined==level ]))
+}
+
+#Barlett test (look for big p-value) (same variance)
+bartlett.test(value, combined)
+
+
+fit.aov2.int = aov(value ~ first + second + first:second)
+summary.aov(fit.aov2.int)
+# first remove interaction if not significant
+
+# Additive model:
+# X.ijk = mu + tau.i + beta.j + eps.ijk; eps.ijk~N(0,sigma^2),
+#     i=1,2 (effect station), j=1,2 (effect gasoline)
+
+fit.aov2.ad = aov(value ~ first + second)
+summary.aov(fit.aov2.ad)
+
+fit.aov1 = aov(value ~ second)
+summary.aov(fit.aov1)
+# 
+# Mgen        = mean(value)
+# Mfirst      = tapply(value,     first, mean)
+# Msecond     = tapply(value,    second, mean)
+# Mcombined   = tapply(value,  combined, mean)
+
+
+```
+
+## Two-ways M-ANOVA
+
+Model with interaction (complete model): X.ijk = mu + tau.i + beta.j + gamma.ij + eps.ijk;
+eps.ijk\~N_p(0,Sigma), [p=3] i=1,2 (effect Extrusion), j=1,2 (effect Additive), X.ijs, mu, tau.i,
+beta.j, gamma.ij in R\^3
+
+```{r Two_M-ANOVA}
+# LAB 7 lines 580 - 770
+load("mcshapiro.test.RData")
+plastic = read.table('T6-4.dat',col.names=c('Extrusion','Additive','Tr','Gl','Op'))
+data2MANOVA = plastic
+id_factor = c(1,2)
+id_categories = c(3,4,5)
+for (i in id_factor)
+  data2MANOVA[,i] = factor(data2MANOVA[,i])   #, labels=c('L','H')
+data2MANOVA$combined = factor(paste(data2MANOVA$Extrusion, data2MANOVA$Additive))
+summary(data2MANOVA)
+
+value = data2MANOVA[, id_categories]
+first = data2MANOVA$Extrusion
+second = data2MANOVA$Additive
+combined=data2MANOVA$combined
+
+p_cat = length(id_categories)   # number of categories
+g = length(levels(first))
+b = length(levels(second))
+n = length(value)/(g*b)    # number of elements in each combined group
+
+### Verify the assumptions:
+# 1)  normality (multivariate) in each combined group
+Ps_combined = NULL
+for(level in levels(combined)){
+  Ps_combined = c(Ps_combined, mcshapiro.test(as.data.frame(data2MANOVA[combined == level,id_categories]))$p) # look for big p-value 
+}
+Ps_combined # look for big p-value 
+
+# 2) same covariance structure (= same covariance matrix Sigma)
+Smatrixes = list()
+for (level in levels(combined)){
+  Smatrixes[[length(Smatrixes)+1]] = cov(value[combined == level,])
+}
+
+color_mat = matrix(unlist(Smatrixes), ncol = p_cat, byrow = T)
+par(mfrow=c(1,length(Smatrixes)))
+for (i in 1:length(Smatrixes)){
+  image(Smatrixes[[i]], col=heat.colors(100),main=paste('Cov S',i, sep=''), asp=1, axes = FALSE, breaks = quantile(color_mat, (0:100)/100, na.rm=TRUE))
+}
+
+## bartlett.test(d.numeric, as.factor(d$type1):as.factor(d$type2))
+
+
+fit = manova( as.matrix(value) ~ first + second + first:second)
+summary.manova(fit, test="Wilks")
+
+fit2= manova( as.matrix(value) ~ first + second)
+summary.manova(fit2, test="Wilks")
+
+# summary.aov(fit2)
+
+# 
+# # Bonferroni
+# alpha = 0.05
+# g = 2
+# b = 2
+# p = 3
+# n = 5
+# N = n*g*b # 20
+# 
+# W = summary.manova(fit2)$SS$Residuals
+# 
+# # how many comparisons?
+# k = g*(g-1)/2*p + b*(b-1)/2*p
+# # because we have: g levels on the first treatment on p components
+# #                  b levels on the second treatment on p components
+# k
+# 
+# qT = qt(1 - alpha / (2 * k), g*b*n-g-b+1)
+# # the degrees of freedom of the residuals on the additive model are
+# # g*b*n-g-b+1
+# 
+# mExL  = sapply(plastic3[Ex=='L',],mean)
+# mExH  = sapply(plastic3[Ex=='H',],mean)
+# infEx = mExH-mExL - qT * sqrt( diag(W)/(g*b*n-g-b+1) * (1/10+1/10) )
+# supEx = mExH-mExL + qT * sqrt( diag(W)/(g*b*n-g-b+1) * (1/10+1/10) )
+# 
+# mAdL  = sapply(plastic3[Ad=='L',],mean)
+# mAdH  = sapply(plastic3[Ad=='H',],mean)
+# infAd = mAdH-mAdL - qT * sqrt( diag(W)/(g*b*n-g-b+1) * (1/10+1/10) )
+# supAd = mAdH-mAdL + qT * sqrt( diag(W)/(g*b*n-g-b+1) * (1/10+1/10) )
+# 
+# IC2   = list(ExH_ExL=cbind(infEx, supEx), AdH_AdL=cbind(infAd, supAd))
+# IC2
+# 
+# 
+# quartz(width=21, height = 14)
+# par(mfrow=c(3,4))
+# boxplot(plastic3[,1]~Ex,   main='Fact.: Extrusion (Tear Resistance)'  , ylab='Tr', col=rainbow(2*6)[c(1,2)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[1]][1,]), pch='',main='IC (tau.1-tau.2)[1]',xlab='pairs treat', ylab='IC (tau.1-tau.2)[1]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[1]][1,1],IC2[[1]][1,2]), col='grey55'); 
+# points(1, (mExH-mExL)[1], pch=16, col='grey55'); 
+# points(1, IC2[[1]][1,1], col=rainbow(2*6)[1], pch=16); 
+# points(1, IC2[[1]][1,2], col=rainbow(2*6)[2], pch=16);
+# abline(h=0)
+# 
+# boxplot(plastic3[,1]~Ad,   main='Fact.: Additive (Tear Resistance)'  , ylab='Tr', col=rainbow(2*6)[c(7,8)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[2]][1,]), pch='',main='IC (beta.1-beta.2)[1]',xlab='pairs treat', ylab='IC (beta.1-beta.2)[1]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[2]][1,1],IC2[[2]][1,2]), col='grey55'); 
+# points(1, (mAdH-mAdL)[1], pch=16, col='grey55'); 
+# points(1, IC2[[2]][1,1], col=rainbow(2*6)[7], pch=16); 
+# points(1, IC2[[2]][1,2], col=rainbow(2*6)[8], pch=16);
+# abline(h=0)
+# 
+# boxplot(plastic3[,2]~Ex,   main='Fact.: Extrusion (Gloss)'  , ylab='Gl', col=rainbow(2*6)[c(3,4)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[1]][2,]), pch='',main='IC (tau.1-tau.2)[2]',xlab='pairs treat', ylab='IC (tau.1-tau.2)[2]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[1]][2,1],IC2[[1]][2,2]), col='grey55'); 
+# points(1, (mExH-mExL)[2], pch=16, col='grey55'); 
+# points(1, IC2[[1]][2,1], col=rainbow(2*6)[3], pch=16); 
+# points(1, IC2[[1]][2,2], col=rainbow(2*6)[4], pch=16);
+# abline(h=0)
+# 
+# boxplot(plastic3[,2]~Ex,   main='Fact.: Additive (Gloss)'  , ylab='Gl', col=rainbow(2*6)[c(9,10)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[2]][2,]), pch='',main='IC (beta.1-beta.2)[2]',xlab='pairs treat', ylab='IC (beta.1-beta.2)[2]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[2]][2,1],IC2[[2]][2,2]), col='grey55'); 
+# points(1, (mAdH-mAdL)[2], pch=16, col='grey55'); 
+# points(1, IC2[[2]][2,1], col=rainbow(2*6)[9], pch=16); 
+# points(1, IC2[[2]][2,2], col=rainbow(2*6)[10], pch=16);
+# abline(h=0)
+# 
+# boxplot(plastic3[,3]~Ex,   main='Fact.: Extrusion (Opacity)'  , ylab='Op', col=rainbow(2*6)[c(5,6)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[1]][3,]), pch='',main='IC (tau.1-tau.2)[3]',xlab='pairs treat', ylab='IC (tau.1-tau.2)[3]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[1]][3,1],IC2[[1]][3,2]), col='grey55'); 
+# points(1, (mExH-mExL)[3], pch=16, col='grey55'); 
+# points(1, IC2[[1]][3,1], col=rainbow(2*6)[5], pch=16); 
+# points(1, IC2[[1]][3,2], col=rainbow(2*6)[6], pch=16);
+# abline(h=0)
+# 
+# boxplot(plastic3[,3]~Ex,   main='Only Factor Additive (Opacity)'  , ylab='Op', col=rainbow(2*6)[c(11,12)], ylim=c(-2,10))
+# plot(c(1,g*(g-1)/2),range(IC2[[2]][3,]), pch='',main='IC (beta.1-beta.2)[3]',xlab='pairs treat', ylab='IC beta.1[3]', ylim=c(-2,10))
+# lines(c(1,1), c(IC2[[2]][3,1],IC2[[2]][3,2]), col='grey55'); 
+# points(1, (mAdH-mAdL)[3], pch=16, col='grey55'); 
+# points(1, IC2[[2]][3,1], col=rainbow(2*6)[11], pch=16); 
+# points(1, IC2[[2]][3,2], col=rainbow(2*6)[12], pch=16);
+# abline(h=0)
+
+
+```
+
+## Hotelling Test T2
+
+T2 Hotelling Test:
+
+    Hypothesis:
+        Gaussianity of groups
+        Gaussianity of differences
+
+    H0: delta == delta.0    vs    H1: delta != delta.0
+        with delta.0=c(0,0)
+
+```{r Hotelling_Test for repeated measure}
+
+load("mcshapiro.test.RData")
+df = read.table('bento.txt')
+
+#### Change here ####
+id_group1 = c(1:4)
+id_group2 = c(5:8)
+#####################
+
+## Gaussianity of groups
+mcshapiro.test(df[,id_group1])$p
+mcshapiro.test(df[,id_group2])$p
+# look for big p-value
+
+df_diff = data.frame(df[,id_group1]-df[,id_group2])
+
+## Gaussianity of differences
+mcshapiro.test(df_diff)$p
+# boxplot(df_diff)
+
+
+## T2 Hotelling Test 
+# H0: delta == delta.0 vs H1: delta != delta.0
+# with delta.0=c(0,0)
+
+n = dim(df_diff)[1]
+p = dim(df_diff)[2]
+
+diff_mean = sapply(df_diff, mean)
+diff_mean
+diff_cov = cov(df_diff)
+diff_invcov = solve(diff_cov)
+
+alpha   = .05
+delta_0 = rep(0, p)
+
+diff_T2 = n * (diff_mean-delta_0) %*% diff_invcov %*% (diff_mean-delta_0)
+diff_T2
+
+cfr.fisher = ((n-1)*p/(n-p))*qf(1-alpha/p,p,n-p)
+cfr.fisher
+
+diff_T2 < cfr.fisher # FALSE: we reject H0 at level 5%
+# we compute the p-value
+P = 1-pf(diff_T2*(n-p)/(p*(n-1)), p, n-p)
+P   # rifiuto l'ipotesi nulla di delta_o = 0
+
+# l'hanami impatta sui bento delle famiglie
+
+# Now, let's communicate our results to the client.
+# Let's build confidence intervals for linear combination of the
+# components of the mean vector
+
+## Simultaneous T2 intervals
+T2 = matrix(0, p, 3)
+dimnames(T2)[[1]] = colnames(df_diff)
+dimnames(T2)[[2]] = c('inf','center','sup')
+
+for (i in 1:p){
+  T2[i,] = c( diff_mean[i]-sqrt(cfr.fisher*diff_cov[i,i]/n) , diff_mean[i], diff_mean[i]+sqrt(cfr.fisher*diff_cov[i,i]/n) )
+}
+T2
+
+```
+
+```{r Hotelling Contrast matrix}
+load("mcshapiro.test.RData")
+df = read.table('bento.txt')
+df = df[,1:4] # just for the example
+
+mcshapiro.test(df) # multivariate normal
+# univariate normal ? 
+PS   = NULL
+for (i in 1:4) {
+  PS = c(PS, shapiro.test(df[,i])$p) # multivariate normal
+}
+
+n = dim(df)[1]
+q = dim(df)[2]
+M = sapply(df,mean)
+S = cov(df)
+
+# we build one of the possible contrast matrices to answer the question
+C = matrix(c(-1, 1, 0, 0,
+              -1, 0, 1, 0,
+              -1, 0, 0, 1), 3, 4, byrow=T)
+
+# OR 
+# C = matrix(c(-1, 1, 0, 0,
+#               0, -1, 1, 0,
+#               0, 0, -1, 1), 3, 4, byrow=T)
+
+# Test: H0: C%*%mu == 0 vs H1: C%*%mu != 0
+alpha   = .05
+delta.0 = c(0,0,0) # C %*% mu
+
+Md = C %*% M 
+Sd = C %*% S %*% t(C)
+Sdinv = solve(Sd)
+
+T2 = n * t( Md - delta.0 ) %*% Sdinv %*% ( Md - delta.0 )
+
+cfr.fisher = ((q-1)*(n-1)/(n-(q-1)))*qf(1-alpha,(q-1),n-(q-1)) 
+
+T2 < cfr.fisher
+T2
+cfr.fisher
+
+# T2 is much higher than cfr.fisher => the p-value will be very small
+P = 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
+P
+
+# there's statistical evidence to say that the prices are not the same through the year
+```
+
+```{r Hotelling with differente number}
+mcshapiro.test(df[which(df$clu == 1),1:2])
+mcshapiro.test(df[which(df$clu == 2),1:2])
+var.test(X+Y~clu, data = df) #pval = 0.2206
+
+# sono normali bivariate -> test per la differenza di medie di popolazioni normali con stessa varianza
+
+# we compute the sample mean, covariance matrices and the matrix
+# Spooled
+alpha = 0.05
+
+t1 = df[which(Restaurant == levels(df[,4])[1]),1:3]
+t2 = df[which(Restaurant == levels(df[,4])[2]),1:3]
+
+n1 = dim(t1)[1]
+n2 = dim(t2)[1] 
+p  = dim(t1)[2] 
+
+t1.mean = sapply(t1,mean)
+t2.mean = sapply(t2,mean)
+t1.cov  =  cov(t1)
+t2.cov  =  cov(t2)
+Sp      = ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+
+cfr.fisher = (p*(n1+n2-2)/(n1+n2-1-p))*qf(1-alpha,p,n1+n2-1-p)
+
+# Simultaneous T2 intervals
+total = c(t1.mean[1]-t2.mean[1]-sqrt(cfr.fisher*Sp[1,1]*(1/n1+1/n2)), t1.mean[1]-t2.mean[1]+sqrt(cfr.fisher*Sp[1,1]*(1/n1+1/n2)) )
+filling = c(t1.mean[2]-t2.mean[2]-sqrt(cfr.fisher*Sp[2,2]*(1/n1+1/n2)), t1.mean[2]-t2.mean[2]+sqrt(cfr.fisher*Sp[2,2]*(1/n1+1/n2)) )
+breading = c(t1.mean[3]-t2.mean[3]-sqrt(cfr.fisher*Sp[3,3]*(1/n1+1/n2)), t1.mean[3]-t2.mean[3]+sqrt(cfr.fisher*Sp[3,3]*(1/n1+1/n2)) )
+IC.T2 = rbind(total,filling,breading)
+dimnames(IC.T2)[[2]] = c('inf','sup')                        
+IC.T2
+
+```
+
+## Elliptical region
+
+```{r Elliptical region}
+df = NULL # Insert here IP 2 columns
+
+df_mean = sapply(df, mean)
+df_cov = cov(df)
+df_invcov = solve(df_cov)
+
+alpha = 0.01
+n = dim(df)[1]
+p = dim(df)[2]
+cfr.fisher = ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
+
+delta.0 = rep(0.0, p)
+# Ellipsoidal confidence region with confidence level 99%
+
+## Simultaneous T2 intervals
+T2 = matrix(0, p, 3)
+dimnames(T2)[[1]] = colnames(df_diff)
+dimnames(T2)[[2]] = c('inf','center','sup')
+
+for (i in 1:p){
+  T2[i,] = c( diff_mean[i]-sqrt(cfr.fisher*diff_cov[i,i]/n) , diff_mean[i], diff_mean[i]+sqrt(cfr.fisher*diff_cov[i,i]/n) )
+}
+T2
+
+library(car)
+
+# plot of ellipse with simultaneous CI
+x11()
+plot(df, asp=1, pch=1, main='Dataset of the Differences')
+ellipse(center=df_mean, shape=df_cov/n, radius=sqrt(cfr.fisher), lwd=2)
+# e = ellipse(center=df_mean, shape=df_cov, radius=sqrt(qchisq(1-alpha,p)),lty=2,col='red',lwd=2)
+abline(v = T2[1,1], col='red', lwd=1, lty=2)
+abline(v = T2[1,3], col='red', lwd=1, lty=2)
+abline(h = T2[2,1], col='red', lwd=1, lty=2)
+abline(h = T2[2,3], col='red', lwd=1, lty=2)
+points(delta.0[1], delta.0[2], pch=16, col='grey35', cex=1.5)
+abline(h=delta.0[1], v=delta.0[2], col='grey35')
+
+# worst direction
+worst = df_invcov %*% (df_mean-delta.0)
+worst = worst/sqrt(sum(worst^2))
+worst
+# Angle with the x-axis:
+theta.worst = atan(worst[2]/worst[1])+pi
+theta.worst
+
+# Confidence interval along the worst direction:
+IC.worst  = c( df_mean %*% worst - sqrt(cfr.fisher*(t(worst)%*%df_cov%*%worst)/n),
+                df_mean %*% worst,
+                df_mean %*% worst + sqrt(cfr.fisher*(t(worst)%*%df_cov%*%worst)/n) )
+IC.worst
+delta.0%*%worst
+
+# Extremes of IC.worst in the coordinate system (x,y):
+x.min = IC.worst[1]*worst
+x.max = IC.worst[3]*worst
+m1.ort = -worst[1]/worst[2]
+q.min.ort = x.min[2] - m1.ort*x.min[1]
+q.max.ort = x.max[2] - m1.ort*x.max[1]
+abline(q.min.ort, m1.ort, col='forestgreen', lty=2,lwd=1)
+abline(q.max.ort, m1.ort, col='forestgreen', lty=2,lwd=1)
+
+m1=worst[2]/worst[1] # worst direction
+abline(0, m1, col='grey35')
+segments(x.min[1],x.min[2],x.max[1],x.max[2],lty=1,lwd=2, col='forestgreen')
+
+
+###### DA revisionare
+# Expression of ellipse
+eigen(df_cov)$vectors
+# Center:
+df_mean
+# Radius of the ellipse:
+r = sqrt(cfr.fisher)
+# r = sqrt(qchisq(1-alpha,p))
+# Length of the semi-axes:
+semi_ax = r*sqrt(eigen(df_cov)$values)  
+# Analitical expr: x^2 / a^2 + y^2 / b^2 = 1 se centrata nell'origine degli assi 
+```
+
+## Hierarchical clustering
+
+```{r Hierarchical_clustering}
+df = read.table('geisha.txt')
+head(df)
+## shuffle data if exist order
+n = dim(df)[1]
+misc = sample(n)
+df = df[misc,]
+
+
+choosen_metric = "euclidean"
+choosen_linkage = "complete"
+
+## if 2D scatterplot
+plot(df, pch = 16)
+
+df_e= dist(df, method=choosen_metric) # see help dist for methods
+df_es = hclust(df_e, method=choosen_linkage) # see help hclust for methods
+
+# cophenetic Matrix and coefficient
+coph_es = cophenetic(df_es)
+es = cor(df_e, coph_es)
+es
+#coeff vicino ad 1 è buono, altrimenti hai rumore nel dendogram
+
+par(mfrow= c(1,2))
+image(as.matrix(df_e), main=choosen_metric, asp=1 )
+image(as.matrix(coph_es), main=choosen_linkage, asp=1 )
+
+# dendrogram
+par(mfrow= c(1,1))
+plot(df_es, main=paste(choosen_metric, choosen_linkage), hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+rect.hclust(df_es, k=2) # ok fa schifo sto clustering
+rect.hclust(df_es, k=3)
+
+# cutting tree
+n_cluster = 2
+cluster_es = cutree(df_es, k=n_cluster) 
+dim_cluster = NULL
+for (i in 1:n_cluster){
+  dim_cluster = c(dim_cluster, length(cluster_es[which(cluster_es == i)]))
+}
+dim_cluster
+
+# centroids
+centroids = apply (df, dim(df)[2], function (x) tapply (x, cluster_es, mean))
+centroids
+
+# Colored Scatterplot
+# x11()
+plot(df, pch = 16, col = cluster_es+1)
+points(centroids, pch = 4, cex = 2, lwd = 2) # col = c(1:n_cluster+1)
+
+```
+
+## Bonferroni
+
+    mean +- qt(1-alpha/(2*k), n-g) * sqrt( Sn )  or Spooled? ((n-1) dof)?
+
+######### da sistemare
+
+
+```{r Gabri Bonf mean var}
+alpha = 0.05
+k = 6 # number of CI
+g = 3 # number of clusters
+IC={}
+Ps={}
+for(i in 1:g){
+    X = df[which(cluster_es==i),1] # i need only the major axis
+    n = length(X)
+    Ps = c(Ps,shapiro.test(X)$p)
+    x.mean   = mean(X)
+    x.cov    = var(X)
+    
+    ICmean = c(inf    = x.mean - sqrt(x.cov/n) * qt(1 - alpha/(2*k), n-1),
+                center = x.mean,
+                sup    = x.mean + sqrt(x.cov/n) * qt(1 - alpha/(2*k), n-1))
+    
+    ICvar = c(inf     = x.cov*(n-1) / qchisq(1 - alpha/(2*k), n-1),
+               center  = x.cov,
+               sup     = x.cov*(n-1) / qchisq(alpha/(2*k), n-1))
+    
+    IC = rbind(IC,
+                ICmean,
+                ICvar)
+}
+Ps
+IC
+```
+
+
+```{r Bonferroni}
+## Versione per IC Bonf media colonne simultanea
+# mancano ipotesi di normalità 
+M = sapply(df, mean)
+S = cov(df)
+alpha = 0.05
+k = 4 # number of intervals I want to compute (set in advance)
+cfr.t = qt(1-alpha/(2*k),n-1)
+Bonf = cbind(inf = M - cfr.t*sqrt(diag(S)/n),
+            center = M,
+            sup = M + cfr.t*sqrt(diag(S)/n))
+Bonf
+
+
+######### da sistemare
+#mancano ipotesi di normalità
+
+
+df = read.table('geisha.txt')
+
+alpha = 0.05
+k = 4 # numbero of simultaneous tests
+
+value = df
+groups = as.factor(cluster_es)
+
+## Bonferroni for difference
+# Check for omoschedasticity of variance between groups 
+bartlett.test(df$duration, groups)
+
+## IF EQUAL VARIANCE (p-value big)
+n = length(value[,1])
+g = length(levels(groups))
+qT = qt(1-alpha/(2*k), n-g)
+ng      = table(groups) 
+
+
+#Single grouop:
+Meang  = tapply(value[,1], groups, mean)
+fit = aov(value[,1] ~ groups)
+SSres = sum(residuals(fit)^2)
+S = SSres/(n-g)
+
+ICrange=NULL
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ICrange=rbind(ICrange,as.numeric(c(Meang[i]-Meang[j] - qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )),
+                                       Meang[i]-Meang[j] + qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )))))
+  }
+}
+dimnames(ICrange)[[1]] = colnames(df)[[1]]
+dimnames(ICrange)[[2]] = c('inf','sup')
+ICrange
+
+# multiple groups:
+fit = manova(as.matrix(value) ~ groups)
+W = summary.manova(fit)$SS$Residuals
+
+Meang = NULL
+for (level in levels(groups)){
+  Meang = rbind(Meang, sapply(value[groups==level,],mean) )
+}
+ICrange=NULL      # Ogni riga un raggruppamento, prima tutti gli inf e poi i sup per categoria
+for(i in 1:(g-1)) {
+  for(j in (i+1):g) {
+    ICrange=rbind(ICrange,as.numeric(c(Meang[i,]-Meang[j,] - qT * sqrt( diag(W)/(n-g) * ( 1/ng[i] + 1/ng[j] )),
+                                       Meang[i,]-Meang[j,] + qT * sqrt( diag(W)/(n-g) * ( 1/ng[i] + 1/ng[j] )))))
+  }}
+ICrange  # Ogni riga una serie di confroniti, prima tutti gli inf e poi i sup per categoria
+
+## IF NOT EQUAL VARIANCE 
+# ????
+Mt1 = mean(df[which(df$winner == 1),2])
+Mt2 = mean(df[which(df$winner == 0),2])
+St1 = var(df[which(df$winner == 1),2])
+St2 = var(df[which(df$winner == 0),2])
+
+v = ((St1/n1+St2/n2)^2)/((St1^2)/((n1^2)*(n1-1)) + (St2^2)/((n2^2)*(n2-1))) # degree of freedom?
+
+IC.t = c(Mt1 - Mt2 - qt(1-alpha/(2*k), v) * sqrt((St1/n1+St2/n2)^2), Mt1 - Mt2 + qt(1-alpha/(2*k), v) * sqrt((St1/n1+St2/n2)^2))
+names(IC.t) = c('Inf', 'Sup')
+IC.t
+
+  
+
+
+```
+
+```{r Bonferroni for mean and covariance}
+df1 = df[which(cluster_es == 1),1]
+df2 = df[which(cluster_es == 2),1]
+df3 = df[which(cluster_es == 3),1]
+
+union = list(df1, df2, df3)
+
+numb = NULL
+shap_p = NULL
+for (i in union){
+  numb = c(numb, length(i))
+  shap_p = c(shap_p, shapiro.test(i)$p)
+}
+
+alpha = 0.05
+k = 2 * length(union)
+
+Means = NULL
+Covs = NULL
+for (i in union){
+  Means = c(Means, mean(i))
+  Covs = c(Covs, var(i))
+}
+
+IC_mean = NULL
+IC_var = NULL
+for (i in 1:length(union)){
+  IC = c(Means[i] - qt(1-alpha/(2*k), numb[i]-1)* sqrt(Covs[i]/numb[i]), Means[i], Means[i] + qt(1-alpha/(2*k), numb[i]-1)* sqrt(Covs[i]/numb[i]))
+  IC_mean = rbind(IC_mean, IC)
+  
+  IC_v = c(Covs[i]* (numb[i]-1) /qchisq(alpha/(2*k), numb[i]-1), Covs[i], Covs[i]* (numb[i]-1) /qchisq(1 - alpha/(2*k), numb[i]-1))
+  IC_var = rbind(IC_var, IC_v)
+}
+colnames(IC_mean) = c('Inf', 'Center', 'Sup')
+colnames(IC_var) = c('Inf', 'Center', 'Sup')
+
+```
+
+```{r Bonferroni for different numerosity}
+# t1 df
+# t2 df
+
+## Look for normal data ? 
+
+n1 = dim(t1)[1] # n1=3
+n2 = dim(t2)[1] # n2=4
+p  = dim(t1)[2] # p=2
+
+
+# we compute the sample mean, covariance matrices and the matrix Spooled
+
+t1.mean = sapply(t1,mean)
+t2.mean = sapply(t2,mean)
+t1.cov  =  cov(t1)
+t2.cov  =  cov(t2)
+Sp      = ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+# we compare the matrices
+list(S1=t1.cov, S2=t2.cov, Spooled=Sp)
+
+# Test H0: mu1 == mu2  vs  H1: mu1 != mu2
+# i.e.,
+# Test H0: mu1-mu2 == c(0,0)  vs  H1: mu1-mu2 != c(0,0)
+
+alpha   = .01
+delta.0 = c(0,0)
+Spinv   = solve(Sp)
+
+T2 = n1*n2/(n1+n2) * (t1.mean-t2.mean-delta.0) %*% Spinv %*% (t1.mean-t2.mean-delta.0)
+
+cfr.fisher = (p*(n1+n2-2)/(n1+n2-1-p))*qf(1-alpha,p,n1+n2-1-p)
+T2 < cfr.fisher # TRUE: no statistical evidence to reject H0 at level 1%
+
+P = 1 - pf(T2/(p*(n1+n2-2)/(n1+n2-1-p)), p, n1+n2-1-p)
+P  
+# P-value high (we don't reject at 1%,5%,10%)
+
+# Simultaneous T2 intervals
+IC.T2.X1 = c(t1.mean[1]-t2.mean[1]-sqrt(cfr.fisher*Sp[1,1]*(1/n1+1/n2)), t1.mean[1]-t2.mean[1]+sqrt(cfr.fisher*Sp[1,1]*(1/n1+1/n2)) )
+IC.T2.X2 = c(t1.mean[2]-t2.mean[2]-sqrt(cfr.fisher*Sp[2,2]*(1/n1+1/n2)), t1.mean[2]-t2.mean[2]+sqrt(cfr.fisher*Sp[2,2]*(1/n1+1/n2)) )
+IC.T2 = rbind(IC.T2.X1, IC.T2.X2)
+dimnames(IC.T2)[[2]] = c('inf','sup')                        
+IC.T2
+
+```
+
+## LDA and QDA TO CHECK
+
+LDA univariate: 
+Assumptions: 
+  1) if L=i, X.i \~ N(mu.i, sigma.i\^2), i=A,B    # normality in groups
+  2) sigma.A=sigma.B
+  3) c(A\|B)=c(B\|A) (equal misclassification costs)
+  
+QDA Assumptions: 
+  1) if L=i, X.i \~ N(mu.i, sigma.i\^2), i=A,B    # normality in groups
+  3) c(A\|B)=c(B\|A) (equal misclassification costs)
+
+```{r LDA}
+load("mcshapiro.test.RData")
+df = iris
+values = iris[,1:2]
+groups = as.factor(iris[,5])
+
+
+# verify assumptions 1)
+# 1) normality within the groups
+p_val = NULL
+for (i in levels(groups)){
+  p_val = c(p_val, mcshapiro.test(values[which(groups==i),])$p)
+}
+p_val
+#aa = aggregate(values, by= list(groups), FUN = function(x) {y = shapiro.test(x)$p})
+
+
+# 2) equal variance (univariate)
+# var.test(cyto[A,1],cyto[B,1]) # if univariate
+bartlett.test(values, groups)
+
+library(MASS)
+
+values_lda = lda(values, groups) # prior=c(0.95,0.05)
+values_lda
+
+# "coefficients of linear discriminants" and "proportion of trace":
+# Fisher discriminant analysis. 
+# In particular:
+# - coefficients of linear discriminants: versors of the canonical directions
+#   [to be read column-wise]
+# - proportion of trace: proportion of variance explained by the corresponding 
+#   canonical direction
+
+# Prediction
+predict_lda = predict(values_lda, values)
+
+
+# Estimate of AER (actual error rate):
+# 1) APER (apparent error rate)
+# 2) estimate of AER by cross-validation
+
+# 1) Compute the APER
+table(class.true=groups, class.assigned=predict_lda$class)
+errors = (predict_lda$class != groups)
+APER   = sum(errors)/length(groups)
+APER
+
+# Remark: this is correct only if we estimate the prior with the empirical  
+#         frequencies! Otherwise:
+# prior = c(1/3,1/3,1/3)
+# G = 3
+# misc = table(class.true=groups, class.assigned=predict_lda$class)
+# APER = 0
+# for(g in 1:G)
+#   APER = APER + sum(misc[g,-g])/sum(misc[g,]) * prior[g]  
+
+# 2) Compute the estimate of the AER by leave-one-out cross-validation 
+cv_lda = lda(values, groups, CV=TRUE)  # specify the argument CV
+
+table(class.true=groups, class.assignedCV=cv_lda$class)
+
+errorsCV = (cv_lda$class != groups)
+AERCV   = sum(errorsCV)/length(groups)
+AERCV
+# Remark: correct only if we estimate the priors through the sample frequencies!
+
+# Plot the partition induced by LDA
+plot(values, main='Values', pch=20, col = as.numeric(groups)+1)
+legend("topright", legend=levels(groups), fill=1:length(levels(groups))+1)
+points(values_lda$means, pch=4,col=1:length(levels(groups))+1, lwd=2, cex=1.5)
+
+x  = seq(min(values[,1]), max(values[,1]), length=200)
+y  = seq(min(values[,2]), max(values[,2]), length=200)
+xy = expand.grid(x, y)
+
+z  = predict(values_lda, xy)$post  # these are P_i*f_i(x,y)  
+z1 = z[,1] - pmax(z[,2], z[,3])  # P_1*f_1(x,y)-max{P_j*f_j(x,y)}  
+z2 = z[,2] - pmax(z[,1], z[,3])  # P_2*f_2(x,y)-max{P_j*f_j(x,y)}    
+z3 = z[,3] - pmax(z[,1], z[,2])  # P_3*f_3(x,y)-max{P_j*f_j(x,y)}
+
+# Plot the contour line of level (levels=0) of z1, z2, z3: 
+# P_i*f_i(x,y)-max{P_j*f_j(x,y)}=0 i.e., boundary between R.i and R.j 
+# where j realizes the max.
+contour(x, y, matrix(z1, 200), levels=0, drawlabels=F, add=T)  
+contour(x, y, matrix(z2, 200), levels=0, drawlabels=F, add=T)
+contour(x, y, matrix(z3, 200), levels=0, drawlabels=F, add=T)
+
+```
+
+```{r QDA}
+load("mcshapiro.test.RData")
+df = iris
+values = iris[,1:2]
+groups = as.factor(iris[,5])
+
+
+# verify assumptions 1)
+# 1) normality within the groups
+p_val = NULL
+for (i in levels(groups)){
+  p_val = c(p_val, mcshapiro.test(values[which(groups==i),])$p)
+}
+p_val
+
+library(MASS)
+
+
+values_qda = qda(values, groups)
+values_qda
+
+##### Case of different misclassification cost #####
+# misclassification costs (true - assigned)
+cost_12 = 0.05  
+cost_21 = 10
+
+#prior probabilities
+p1 = 1-0.001 # pt
+p2 = 0.001   # pf
+
+# Prior modified to account for the misclassification costs
+prior_c = c(p1*cost_12/(cost_21*p2+cost_12*p1), p2*cost_21/(cost_21*p2+cost_12*p1))
+prior_c
+# add prior in lda or qda
+
+# APER
+Qda.m = predict(qda.m)
+misc = table(class.true=groups, class.assigned=Qda.m$class)
+
+APER = (misc[1,2]*p1 + misc[2,1]*p2)/sum(misc[1,]) # hypotesi of equal numerosity
+APER
+
+# Expected economic loss:
+(misc[1,2]*p1*cost_12 + misc[2,1]*p2*cost_21)/sum(misc[1,])
+
+# question c)
+# P[rejected] = P[rejected | true]P[true] + P[rejected | false]P[false]
+
+#####
+
+
+
+predict_qda = predict(values_qda, values)
+
+# compute the APER
+table(class.true=groups, class.assigned=predict_qda$class)
+errorsq = (predict_qda$class != groups)
+APERq   = sum(errorsq)/length(species.name)
+APERq
+# Remark: correct only if we estimate the priors through the sample frequencies!
+# Else see lda
+
+# Compute the estimate of the AER by leave-out-out cross-validation 
+cv_qda = qda(values, groups, CV=T)
+cv_qda$class
+table(class.true=groups, class.assignedCV=cv_qda$class)
+errorsqCV = (cv_qda$class != groups)
+AERqCV   = sum(errorsqCV)/length(species.name)
+AERqCV
+# Remark: correct only if we estimate the priors through the sample frequencies!
+
+# Plot the partition induced by QDA
+plot(values, main='Values', pch=20, col = as.numeric(groups)+1)
+legend("topright", legend=levels(groups), fill=1:length(levels(groups))+1)
+points(values_qda$means, pch=4,col=1:length(levels(groups))+1, lwd=2, cex=1.5)
+
+x  = seq(min(values[,1]), max(values[,1]), length=200)
+y  = seq(min(values[,2]), max(values[,2]), length=200)
+xy = expand.grid(x, y)
+
+z  = predict(values_qda, xy)$post  # these are P_i*f_i(x,y)  
+z1 = z[,1] - z[,2] 
+z2 = z[,2] - z[,1]  
+contour(x, y, matrix(z1, 200), levels=0, drawlabels=F, add=T)  
+contour(x, y, matrix(z2, 200), levels=0, drawlabels=F, add=T)
+
+
+```
+
+```{r SVM}
+library(e1071)
+
+x = matrix (rnorm (20*2) , ncol =2)
+y = c(rep (-1,10) , rep (1 ,10) )
+x[y==1,] = x[y==1,] + 1
+# Fit the Support Vector Classifier (kernel = "linear")
+# given a cost C
+dat = data.frame(x=x, y=as.factor (y))
+svmfit = svm(y~., data=dat , kernel ='linear', cost =10, scale =FALSE)
+summary(svmfit)
+
+par(mfrow=c(1,2))
+plot(svmfit , dat, col =c('salmon', 'light blue'), pch=19, asp=1)
+
+# support vectors are indicated with crosses
+# they are:
+svmfit$index
+
+# To set the parameter C we can use the function tune(),
+# which is based on cross-validation (10-fold)
+tune_out = tune(svm,y~.,data=dat ,kernel = 'linear',
+                 ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100) )) # add val in list
+summary(tune_out)
+
+# Extract the best model from the result of tune
+bestmod = tune_out$best.model
+summary(bestmod)
+
+plot(bestmod , dat, col =c('salmon', 'light blue'), pch=19, asp=1)
+
+# Prediction for a new observation (command predict())
+ypred = predict(bestmod,testdat)
+table(true.label=testdat$y, assigned.label =ypred )
+
+# For other questions see lda and qda
+
+```
+
+
+## KNN
+
+```{r knn}
+values = iris[,1:2] # 2D dataset
+# Consider add jittering to data:
+# values = values + cbind(rnorm(dim(values)[1], sd=0.025))    
+groups = iris[,5]
+  
+k = 15
+
+plot(values, main='Values', pch=20, col = as.numeric(groups)+1)
+legend("topright", legend=levels(groups), fill=1:length(levels(groups))+1)
+
+x  = seq(min(values[,1]), max(values[,1]), length=200)
+y  = seq(min(values[,2]), max(values[,2]), length=200)
+xy = expand.grid(x, y)
+
+values_knn = knn(train = values, test = xy, cl = groups, k = k)
+
+z  = as.numeric(values_knn)
+
+contour(x, y, matrix(z, 200), levels=c(1.5, 2.5), drawlabels=F, add=T)
+
+
+```
+
+
+## Linear models
+
+```{r Polinomial LM}
+
+# grid to plot
+data.plot = NULL
+x.plot = seq(-1, 1.5, length = 210)
+for(p in 0:20)
+  data.plot = cbind(data.plot, x.plot^p)
+colnames(data.plot) = c(paste('x', 0:20, sep=''))
+data.plot = data.frame(data.plot)
+
+# plot of the training set, test set and "true" mean curve
+plot(x, y, pch=20)                            # training set
+points(x, y.new, col='red')                   # test set
+lines(x.plot, f(x.plot), col='blue', lty=2)   # true mean
+
+# regression with polynomials of increasing order
+SSres = SSres.new = s2 = b = R2 = R2.adj = NULL
+n = 21
+
+x11(width=14, height=7)
+par(mfrow=c(4,4), mar=rep(2,4))
+for(p in 1:16)
+{
+  fit = lm(y ~ 0 + . , data[,1:(p+1)])
+  plot(x, y, pch=20)
+  points(x, y.new, col='red')
+  lines(x.plot, predict(fit, data.plot))
+  lines(x.plot, f(x.plot), col='blue', lty=2)
+  
+  SSres = c(SSres, sum((y - fitted(fit))^2))
+  SSres.new = c(SSres.new, sum((y.new - fitted(fit))^2))
+  s2 = c(s2, sum((y - fitted(fit))^2)/(n - (p+1)))
+  R2 = c(R2, summary(fit)$r.squared)
+  R2.adj = c(R2.adj, summary(fit)$adj.r.squared)
+  bp = rep(0,17)
+  bp[1:(p+1)] = coefficients(fit)
+  b = cbind(b, bp)
+}
+
+# compare some indices
+
+x11()
+par(mfrow=c(2,2))
+plot(1:16, SSres, pch=16)
+abline(v=3, col='blue', lty=2)
+plot(1:16, SSres.new, pch=16)
+abline(v=3, col='blue', lty=2)
+plot(1:16, R2, pch=16)
+abline(v=3, col='blue', lty=2)
+plot(1:16, R2.adj, pch=16)
+abline(v=3, col='blue', lty=2)
+
+# compare parameter estimates
+# true model: regressors x, x^2, x^2; coefficients (1,1,1,-1)
+
+b.true = c(1,1,1,-1, rep(0,8))
+
+x11()
+par(mfrow=c(2,3))
+for(i in 1:5)
+{
+  plot(1:16, b[i,], ylim=c(-5, 5), main=paste('b',i-1,sep=''), pch=16)
+  grid()
+  abline(v=3, col='blue', lty=2)
+  abline(h=b.true[i], col='blue')
+}
+plot(1:16, s2, main='sigma^2', pch=16)
+grid()
+abline(v=3, col='blue', lty=2)
+abline(h=sigma^2, col='blue')
+```
+
+```{r Linear Models}
+df = read.table("tide.txt")
+head(df)
+plot(df$t, df$h)
+mod = lm(h ~ I(sin(2*pi*t/28)) + I(sin(pi*(t-82)/365)) + t, data = df)
+summary(mod)
+
+library(car)
+vif(mod) # hight values means colinearity
+
+# plot summary lm
+par(mfrow = c(2,2))
+plot(mod)
+
+# controllo normalità dei residui
+shapiro.test(mod$residuals)
+
+# array of betas
+coefs = coef(mod)  
+sigma = sd(mod$residuals)
+
+# try to remove covariates
+linearHypothesis(mod, rbind(c(0,1,0,0), c(0,0,1,0)), c(0,0))
+# Linear hypothesis test
+# 
+# Hypothesis:
+# I(sin(2 * pi * t/28)) = 0
+# I(sin(pi * (t - 82)/365)) = 0
+# 
+# Model 1: restricted model
+# Model 2: h ~ I(sin(2 * pi * t/28)) + I(sin(pi * (t - 82)/365)) + t
+# 
+# Res.Df   RSS Df Sum of Sq      F    Pr(>F)    
+# 1    201 50128                                  
+# 2    199 15779  2     34348 216.59 < 2.2e-16 ***
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# seems like periodic components influence the sea level, can't reject
+
+# prova di predizione
+t1 = 263
+new1 = data.frame(t= t1)
+
+# Predizione con intervallo di confidenza
+predict.lm(mod, new1, interval = 'prediction',level = 0.9)
+#   fit      lwr      upr
+# 86.81791 71.89998 101.7358
+
+
+
+
+
+
+```
+
+```{r LM with groups}
+df$wd = ifelse(df$day == "weekday", 1, 0)
+
+mod = lm(kg ~ wd + t + wd:t, data = df)
+summary(mod)
+mod$coefficients
+# (Intercept)          wd           t        wd:t 
+# 108.6863770 -73.4140787   1.6302864   0.5043036 
+vif(mod)
+# wd        t           wd:t 
+# 3.991032 3.716542 7.805284 
+sd(mod$residuals)
+#13.1188
+
+# beta0.0 = 108.6864 intercept for weekends
+# beta0.1 = 108.6864-73.4140787 intercept for weekdays
+# beta1.0 = 1.6303 coeff for weekends
+# beta1.1 = 1.6303 + 0.5043036 coeff for weekdays
+# sigma   = 13.1188 error std.dev
+
+# Prediction
+prediction = predict(fit, data.frame(t = 61))
+prediction
+```
+
+```{r LM Ridge}
+## RIDGE base ##
+fit.ridge = lm.ridge(distance ~ speed1 + speed2, lambda = lambda)
+# Note: to fit the model, R automatically centers X and Y 
+# with respect to their mean.
+
+coef.ridge = coef(fit.ridge)
+yhat.r = cbind(rep(1,n), speed1, speed2)%*%coef.ridge # ridge fitted values
+
+# Choice of the optimal lambda, e.g., via cross-validation
+select(fit.ridge)
+
+#### GLM ####
+x = model.matrix(Y ~ X1 + X2 + X3 + X4)[,-1] # matrix of predictors
+y = Y # vector of response
+lambda.grid = 10^seq(5,-3,length=50)
+
+### Ridge regression
+fit.ridge = glmnet(x,y, lambda = lambda.grid, alpha=0) # alpha=0 -> ridge 
+
+plot(fit.ridge,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+legend('topright', dimnames(x)[[2]], col =  rainbow(dim(x)[2]), lty=1, cex=1)
+
+norm_l2 = NULL
+for(i in 1:50)
+  norm_l2 = c(norm_l2,sqrt(sum((fit.ridge$beta[,i])^2)))
+
+plot(log(lambda.grid),norm_l2)
+
+# Let's set lambda via CV
+cv.ridge = cv.glmnet(x,y,alpha=0,nfolds=10,lambda=lambda.grid) # small k-fold if less data
+
+bestlam.ridge = cv.ridge$lambda.min
+bestlam.ridge
+
+plot(cv.ridge)
+abline(v=log(bestlam.ridge), lty=1)
+
+# Get the coefficients for the optimal lambda
+coef.ridge = predict(fit.ridge, s=bestlam.ridge, type = 'coefficients')[1:5,]
+coef.ridge 
+
+plot(fit.ridge,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+abline(v=log(bestlam.ridge))
+
+
+### Lasso regression
+fit.lasso = glmnet(x,y, lambda = lambda.grid, alpha=1) # alpha=1 -> lasso 
+
+plot(fit.lasso,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+legend('topright', dimnames(x)[[2]], col =  rainbow(dim(x)[2]), lty=1, cex=1)
+
+norm_l1 = NULL
+for(i in 1:50)
+  norm_l1 = c(norm_l1,sum(abs(fit.ridge$beta[,i])))
+
+plot(log(lambda.grid),norm_l1)
+
+# Let's set lambda via CV
+cv.lasso = cv.glmnet(x,y,alpha=1,nfolds=3,lambda=lambda.grid)
+
+bestlam.lasso = cv.lasso$lambda.min
+bestlam.lasso
+
+plot(cv.lasso)
+abline(v=log(bestlam.lasso), lty=1)
+
+# Get the coefficients for the optimal lambda
+coef.lasso = predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')[1:5,]
+coef.lasso 
+
+plot(fit.lasso,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+abline(v=log(bestlam.lasso))
+
+
+# Compare coefficients estimates for LS, Ridge and Lasso
+plot(rep(0, dim(x)[2]), coef(lm(y~x))[-1], col=rainbow(dim(x)[2]), pch=20, xlim=c(-1,3), ylim=c(-1,2), xlab='', ylab=expression(beta),
+     axes=F)
+points(rep(1, dim(x)[2]), coef.ridge[-1], col=rainbow(dim(x)[2]), pch=20)
+points(rep(2, dim(x)[2]), coef.lasso[-1], col=rainbow(dim(x)[2]), pch=20)
+abline(h=0, col='grey41', lty=1)
+box()
+axis(2)
+axis(1, at=c(0,1,2), labels = c('LS', 'Ridge', 'Lasso'))
+legend('topright', dimnames(x)[[2]], col =  rainbow(dim(x)[2]), pch=20, cex=1)
+
+# l2 norm
+sqrt(sum((coef(lm(y~x))[-1])^2)) # LS
+sqrt(sum((coef.ridge[-1])^2))    # ridge
+
+# l1 norm
+sum(abs(coef(lm(y~x))[-1])) # LS
+sum(abs(coef.lasso[-1]))    # lasso
+
+
+# To predict with lasso or ridge create a new lm with the needed regressors
+
+```
+
+```{r Logistic}
+##  Pb2 of 23/07/2009  ##
+# A store of an appliance chain sells two types of televisions: with 4:3 
+# screen and with 16:9 screen. The TV.txt file shows the number of 
+# televisions sold annually for both types of televisions from 1999 
+# to 2008. By introducing an appropriate logistic model and estimating 
+# the parameters with the maximum likelihood method:
+# a) comment the residual deviance by comparing it with that of the model
+#    without regressor.
+# Assuming that the store is representative of the Italian situation:
+# b) provide a pointwise estimate for the proportion of 16:9 televisions 
+#    sold in Italy in 2009;
+# c) provide a pointwise estimate for the year in which sales of 16:9 
+#    televisions exceeded those of 4:3;
+# d) provide a pointwise estimate for the year in which 16:9 televisions
+#    will cover (or have covered) 99% of the Italian market.
+
+TV = read.table('TV.txt', header=T)
+head(TV)
+dim(TV)
+
+#a)
+fit = glm(factor(Tipo) ~ Anno, data=TV, family='binomial')
+summary(fit)
+
+plot(TV$Anno, as.numeric(factor(TV$Tipo))-1)
+lines(seq(1997, 2010, by=0.1), 
+      predict(fit, data.frame(Anno=seq(1997,2010,by=0.1)), type='response'))
+
+# null model
+Freq.tot = table(TV$Tipo)[2]/ (table(TV$Tipo)[1] + table(TV$Tipo)[2])
+abline(h = Freq.tot, col='blue', lty=2)
+
+#b)
+predict(fit, data.frame(Anno=2009), type='response')
+
+#c) 
+(log(0.5/0.5) - coefficients(fit)[1]) / coefficients(fit)[2]
+abline(h=0.5, col='red')
+
+#d)
+(log(0.99/0.01) - coefficients(fit)[1]) / coefficients(fit)[2]
+abline(h=0.99, col='red')
+```
+
+```{r Regression Trees}
+### Regression Trees: Boston housing dataset
+
+help(Boston)
+dim(Boston)
+names(Boston)
+
+tree.boston = tree(medv~.,Boston)
+summary(tree.boston)
+
+plot(tree.boston)
+text(tree.boston,pretty=0)
+
+cv.boston = cv.tree(tree.boston)
+
+plot(cv.boston$size,cv.boston$dev,type='b',xlab='size',ylab='deviance')
+
+prune.boston = prune.tree(tree.boston,best=4)
+
+plot(prune.boston)
+text(prune.boston,pretty=0)
+```
+
+```{r LM Teo}
+
+##### Basic regression + linear hyp + pred ####
+
+airfoil = read.table('airfoil.txt', header=T)
+head(airfoil)
+airfoil$velocity = factor(airfoil$velocity)
+
+### Model:
+### distance = beta_0 + beta_1 * speed + beta_2 * speed^2 + Eps
+### (linear in the parameters!)
+
+### Assumptions:
+## 1) Parameter estimation: E(Eps) = 0  and  Var(Eps) = sigma^2 
+## 2) Inference:            Eps ~ N(0, sigma^2)
+
+### Assumptions Parameter estimation: E(Eps) = 0  and  Var(Eps) = sigma^2 
+
+#regression
+fit1 = lm(sound ~ frequency*velocity, data = airfoil)   #I(velocity^2)
+summary(fit1)
+summary(fit2)$sigma^2 #sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
+fit1$coefficients
+shapiro.test(fit1$residuals)
+vif(fit1) # high => highly collinear with the other variables in the model
+par(mfrow=c(2,2))
+plot(fit1)
+
+##### Assumption Inference: Eps ~ N(0, sigma^2)
+
+#linear hyp
+linearHypothesis(fit1, rbind(c(0,1,0,0), c(0,0,0,1)),c(0,0))
+linearHypothesis(fit1, rbind(c(0,0,1,0), c(0,0,0,1)),c(0,0))
+linearHypothesis(fit1, rbind(c(0,0,0,1)),c(0))
+
+fit2 = lm(sound ~ frequency + velocity, data = airfoil)
+summary(fit2)
+shapiro.test(fit2$residuals)
+vif(fit2)
+par(mfrow=c(2,2))
+plot(fit2)
+
+#prediction & confidence interval 
+new = data.frame(frequency = 15000, velocity = 'H' )
+# or new = data.frame(name = seq(min(original_data),max(original_data),len=100))
+answer = predict(fit2, newdata = new, interval = 'confidence') #level = 1-alpha
+                                                  #'prediction'
+                                                  #'
+#confidence interval for mean and variance
+Z0   = data.frame(profondita = 200, pozzo = '3')
+ICBmean = predict(fit2, Z0, interval='confidence',level=1-alpha/k) 
+
+e = residuals(fit2)
+ICBvar = data.frame(L=t(e)%*%e/qchisq(1-alpha/(2*k),n-(r+1)),
+                     U=t(e)%*%e/qchisq(alpha/(2*k),n-(r+1)))
+ICBvar
+
+#max of the values & prediction of a data already in the dataset
+t.max = which.max(result4$fitted.values)
+max = predict(result4, df, interval = 'confidence', level = 0.99)[t.max,]
+
+# Bonferroni confidence intervals on beta
+p = length(fm$coefficients)-1  # number of tested coefficients
+confint(fm, level= 1-0.05/p)[2:3,]  # Bonferroni correction!
+# Note: `confint()` returns the confidence intervals one-at-a-time; to have a global level 95% we need to include a correction
+
+
+
+# COLLINEARITY
+
+
+##### PCA regression
+speed.pc = princomp(cbind(speed1,speed2), scores=TRUE)
+summary(speed.pc)
+speed.pc$loadings
+
+sp1.pc = speed.pc$scores[,1]
+sp2.pc = speed.pc$scores[,2]
+
+fm.pc = lm(distance ~ sp1.pc + sp2.pc) # fit the PCs
+summary(fm.pc) 
+
+##### Ridge regression ####
+
+lambda = .5
+fit.ridge = lm.ridge(distance ~ speed1 + speed2, lambda = lambda)
+names(fit.ridge) # properties we can access
+yhat.lm = cbind(rep(1,n), speed1, speed2) %*% coef(fm)  # LM fitted values
+yhat.r  = cbind(rep(1,n), speed1, speed2) %*% coef(fit.ridge) # ridge fitted values
+
+# test many lambdas
+lambda.c = seq(0,10,0.01)
+fit.ridge = lm.ridge(distance ~ speed1 + speed2, lambda = lambda.c) # lambda is a sequence here!
+select(fit.ridge) # choose the best one
+
+
+##### Lasso regression ####
+
+# Build the matrix of predictors
+x = model.matrix(tox~., data = toxicity)[,-1]
+# Build the vector of response
+y = toxicity$tox
+
+# Let's set a grid of candidate lambda's for the estimate
+lambda.grid = seq(0.01,1,length=100)
+fit.lasso = glmnet(x,y, lambda = lambda.grid, alpha = 1)
+# alpha = 1 -> Lasso (default)
+# alpha = 0 -> Ridge
+
+# Plot coefficients value versus lambda
+plot(fit.lasso,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+legend('topright', dimnames(x)[[2]], col =  rainbow(dim(x)[2]), lty=1, cex=1)
+
+# Let's set lambda via cross validation
+cv.lasso = cv.glmnet(x,y,lambda=lambda.grid, nfolds = 10) # default: 10-fold CV
+
+bestlam.lasso = cv.lasso$lambda.min
+bestlam.lasso
+plot(cv.lasso)
+abline(v=log(bestlam.lasso), lty=1)
+# solid line: optimal lambda
+# dashed line: biggest lambda not to far from the optimal one (1 std from the optimal)
+
+# Get the coefficients for the optimal lambda
+coef.lasso = predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+coef.lasso
+
+
+# another way to do model selection
+library(leaps)
+help(regsubsets)
+
+regfit.full = regsubsets(Salary ~ ., data=Hitters,
+                          nvmax=19, # max number of subsets
+                          method="forward-backward-exhaustive")
+summary(regfit.full)
+reg.summary$which
+reg.summary$rsq   # r-squared
+reg.summary$adjr2 # adjusted r-squared
+reg.summary$rss   # residual sum of squares
+
+best_model_id = which.max(reg.summary$adjr2)
+coef(regfit.full, best_model_id)
+```
+
+
+
+## Spacial 
+-> foto binned variogram: it stabilizes
+-> model y(si) = a0 + delta(si)
+-> model assumptions: E[delta(si)] = 0, and II order stationarity:
+		E[z(si)] = m independent from si
+		Cov(z(s1),z(s2))=Cov(delts(s1),delta(s2))
+-> foto fitted model with gls
+
+-> universal kriging -> we relax secodn order stationarity, say E[z(si)]=msi
+
+BLUE = TRUE -> MEAN
+BLUE = FALSE -> PREDICTION
+
+Model assumptions
+
+- The ordinary Kriging model assumes II order stationariety ( E[z_s] = m for any s and Cov(z_s1,z_s2) = C(h) where h = norm(s_1 - s_2) ), and isotropy. We also assume that C(•) is known.
+
+- The universal Kriging model assumes z_s = m_s + delta_s for any s in D (domain) where m_s is called drift and describes the non constant spacial mean variation. Moreover we assume E[delta_s] = 0 for any s in D (so that E[z_s] = m_s) and that Cov(z_s1,z_s2) = Cov(delta_s1,delta_s2) for any pair. We also assume that C(•) is known and that m_s follows a linear model m_s(t) = sum_l=0^L a_l(t) f_l(s) for s in D and t in T, where f are known functions of s and a_l are coefficients independent from the spacial location.
+
+```{r gls}
+hot.gstat = gstat(id = 'price', formula = price ~ distance + winter + winter:distance, data = hotels, nmax = 100, model=v.fit2, set = list(gls=1))
+hot.gstat
+# Estimate the variogram from GLS residuals:
+v.gls=variogram(hot.gstat)
+plot(v.gls)
+v.gls.fit = fit.variogram(v.gls, vgm(1000, "Sph", 500))
+plot(v.gls, v.gls.fit, pch = 19)
+# Update gstat object with variogram model
+hot.gstat = gstat(id = 'price', formula = price ~ distance + winter + winter:distance,
+                   data = hotels, nmax = 100, model=v.gls.fit, set = list(gls=1))
+hot.gstat
+predict(hot.gstat, hotels[2,], BLUE = TRUE)
+predict(hot.gstat, hotels[1,], BLUE = TRUE)
+a1 = (predict(hot.gstat, hotels[2,], BLUE = TRUE)$price.pred - predict(hot.gstat, hotels[1,], BLUE = TRUE)$price.pred)/(car[2,4]-car[1,4])
+a0= predict(hot.gstat, hotels[2,], BLUE = TRUE)$price.pred - a1*car[2,4] #use original table
+
+```
+
+```{r Whale}
+# BLUE TRUE
+#    - se vuoi stimare i coefficienti (GLS)
+#    - not using completely the spacial information (se devi predirre qualcosa di indipendente)
+# BLUE FALSE
+#    - WLS
+#    - se vuoi fare una predizione relativa a quel fenomeno
+
+n <- dim(df)[1]
+p <- dim(df)[2]
+
+library(sp)           ## data management
+library(lattice)      ## data management
+library(geoR)         ## Geostatistics
+library(gstat)        ## Geostatistics
+
+## gls to estimate parameter
+
+coordinates(df) <- c('x','y')
+df$log.sights <- log(df$sights)
+
+v.t <- variogram(log.sights ~ log.chlorofill , data=df)
+plot(v.t,pch=19)
+
+# Check assumprion on isotropy
+plot(variogram(log(sights) ~ 1+log.chlorofill, d, alpha = c(0, 45, 90, 135)),pch=19)
+
+# Choose values from the previous plot
+v.fit1 <- fit.variogram(v.t, vgm(0.5, "Exp", 100000))    ###vgm(psill, 'type', range, nugget)
+plot(v.t, v.fit1, pch = 3)
+v.fit1
+
+
+g.t <- gstat(formula = log.sights ~ log.chlorofill , data = df, model = v.fit1)
+
+# predict hotels[1,]
+# Estimate the mean: use the argument 'BLUE=TRUE' otherwise the observation
+y1 <- predict(g.t, df[1,], BLUE = TRUE)$var1.pred
+y2 <- predict(g.t, df[2,], BLUE = TRUE)$var1.pred
+
+# Coefficients
+a1 = (y2-y1)/(df[2,]$log.chlorofill - df[1,]$log.chlorofill)
+a0 = y1 - a1*df[1,]$log.chlorofill
+
+## Kriging from coordinates
+datum <- as.data.frame(t(matrix(c(253844.8,385997.7))))
+names(datum)=c('x','y')
+coordinates(datum)=c('x','y')
+
+v.t2 <- variogram(log.chlorofill ~ 1, data=df)
+plot(v.t2,pch=19)
+
+v.fit2 <- fit.variogram(v.t2, vgm(3, "Sph", 50000))    ###vgm(psill, 'type', range, nugget)
+plot(v.t2, v.fit2, pch = 3)
+v.fit2
+# predict first value
+g.t2 <- gstat(formula = log.chlorofill ~ 1 , data = df, model = v.fit2)
+pred.log.sight <- predict(g.t2, df[1,], BLUE = TRUE)$var1.pred
+
+# predict second value
+s0 = c(514811.55, 5037308.54) 
+datum.pred <- data.frame(x=s0[1], y = s0[2], colour="red")
+coordinates(datum.pred)=c('x','y')
+predict(g.t, datum.pred, BLUE = FALSE)  # 10.48128 2.865919
+
+
+datum.pred <- as.data.frame(t(matrix(c(253844.8,385997.7, pred.log.sight))))
+names(datum.pred)=c('x','y','log.chlorofill')
+coordinates(datum.pred)=c('x','y')
+predict(g.t, datum.pred, BLUE = FALSE)$var1.pred
+
+## variance of kriging
+predict(g.t, datum.pred, BLUE = FALSE)$var1.var
+# since we are using universal it's an underestimation of the true variance
+```
+
+
+
+
+## FDA
+
+```{r FPCA}
+library(fda)
+library(fields)
+
+data = CanadianWeather$dailyAv[,,1] # MATRIX time series per colonne 
+matplot(data,type='l',main='Canadian temperature',xlab='Day',ylab='Temperature')
+
+time = 1:365
+
+# create funcitonal data variable
+x_max = dim(data)[1]
+n_bas = 365
+basis_1 = create.fourier.basis(rangeval=c(0,x_max),nbasis=n_bas)
+data_fd_1 = Data2fd(y = data,argvals = time,basisobj = basis_1)
+plot.fd(data_fd_1)
+
+# Better to use a b-spline basis
+n_bas = 15
+degree = 3
+order = degree + 1
+x_max = dim(data)[1]
+time = 1:24
+basis = create.bspline.basis(rangeval=c(0,x_max),nbasis=n_bas, norder=norder)
+data_fd = Data2fd(y = data,argvals = time,basisobj = basis)
+plot.fd(data_fd, main="B-splines")
+
+data_fd$coefs[1:3,1]    #   bspl3.1   bspl3.2   bspl3.3 
+                        # 1184.9116  488.3949  349.9349 
+
+# Estimate of the mean and of the covariance kernel
+layout(cbind(1,2))
+plot.fd(data_fd,xaxs='i')
+lines(mean.fd(data_fd),lwd=2)
+eval = eval.fd(time,data_fd)
+image.plot(time, time, (cov(t(eval))[1:x_max,]))
+
+
+## PCA for Functionals 
+pca= pca.fd(data_fd, nharm=5, centerfns=TRUE)
+
+
+# scree plot
+layout(cbind(1,2))
+plot(pca$values,xlab='j',ylab='Eigenvalues')
+plot(cumsum(pca$values)/sum(pca$values),xlab='j',ylab='CPV',ylim=c(0.8,1))
+
+
+# first two FPCs
+x11()
+layout(cbind(1,2))
+plot(pca$harmonics[1,],col=1,ylab='FPC1',ylim=c(-0.1,0.08))
+abline(h=0,lty=2)
+plot(pca$harmonics[2,],col=2,ylab='FPC2',ylim=c(-0.1,0.08))
+
+# plot of the FPCs as perturbation of the mean
+layout(cbind(1,2))
+plot(pca, nx=100, pointplot=TRUE, harm=c(1,2), expand=0, cycle=FALSE)
+
+
+# scatter plot of the scores and outlier
+outlier = 35 
+layout(cbind(1,2))
+plot(pca$scores[,1],pca$scores[,2],xlab="Scores FPC1",ylab="Scores FPC2",lwd=2)
+points(pca$scores[outlier,1],pca$scores[outlier,2],col=2, lwd=4)
+plot(pca$scores[,1],pca$scores[,2],type="n",xlab="Scores FPC1",
+     ylab="Scores FPC2",xlim=c(-400,250))
+text(pca$scores[,1],pca$scores[,2],dimnames(data_W)[[2]], cex=1)
+# Plot of lines
+layout(1)
+matplot(eval.1,type='l')
+lines(eval.1[,35],lwd=4, col=2) #temperature profile for Resolute
+
+```
+
+```{r Smoothing}
+library(fda)
+
+NT = dim(data)[1]
+abscissa = 1:NT
+Xobs0 = data$power
+
+plot(abscissa,Xobs0, type = "l")
+
+# generalized cross-validation
+nbasis = 6:50
+gcv = numeric(length(nbasis))
+for (i in 1:length(nbasis)){
+  basis = create.fourier.basis(range(abscissa), nbasis[i])
+  gcv[i] = smooth.basis(abscissa, Xobs0, basis)$gcv
+}
+par(mfrow=c(1,1))
+plot(nbasis,gcv)
+nbasis[which.min(gcv)]
+abline(v=nbasis[which.min(gcv)],col='red')
+
+basis = create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis[which.min(gcv)])
+plot(basis)
+
+Xsp = smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis = eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xsp0bis ,type="l",col="red",lwd=2)
+
+# compute the central finite differences
+rappincX1 = (Xobs0[3:NT]-Xobs0[1:(NT-2)])/(abscissa[3:NT]-abscissa[1:(NT-2)])
+Xsp1bis = eval.fd(abscissa, Xsp$fd, Lfd=1) # first derivative
+
+plot(abscissa[2:(NT-1)],rappincX1,xlab="t",ylab="first differences x",type="l")
+points(abscissa,Xsp1bis,type='l',col="orange",lwd=3)
+
+# oversmoothing
+nbasis = 5
+basis = create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
+
+Xsp = smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis = eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xsp0bis ,type="l",col="red",lwd=2)
+
+# overfitting
+nbasis = 50
+basis = create.fourier.basis(rangeval=range(abscissa), nbasis=nbasis)
+
+Xsp = smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+Xsp0bis = eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
+
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xsp0bis ,type="l",col="red",lwd=2)
+
+
+
+```
+
+```{r kma}
+x = kma.data$x   # abscissas
+y0 = kma.data$y0 # evaluations of original functions
+y1 = kma.data$y1 # evaluations of original functions' first derivatives
+
+# Plot function
+matplot(t(x),t(y0), type='l', xlab='x', ylab='orig.func')
+title ('Original functions')
+
+
+# Without alignment, let's try with 3 clusters
+n_cluster = 3
+# for similarity in derivatives use d1.pearson
+fdakma_example_noalign_0der = kma(
+  x=x, y0=y0, n.clust = n_cluster, 
+  warping.method = 'NOalignment',     ## for alignment use 'affine'
+  similarity.method = 'd0.pearson',   # similarity computed as the cosine
+                                      # between the original curves 
+                                      # (correlation)
+  center.method = 'k-means'
+  #,seeds = c(1,11,21) # you can give a little help to the algorithm...
+)
+
+kma.show.results(fdakma_example_noalign_0der)
+fdakma_example_noalign_0der$labels
+
+# Tabele of labels assigned to each function
+table(fdakma_example_noalign_0der$labels,
+      fdakma_example$labels, 
+      dnn=c("NOalign_0der_3groups", "Align_1der_2groups"))
+
+
+# Plot of alignment
+plot(x, type="n", xlim=c(min(x),max(x)), ylim=c(min(x),max(x)+2), xlab="abscissa", ylab="warping")
+title("Alignment affinities")
+for(i in 1:30)(
+  abline(a=fdakma_example$shift[i],b=fdakma_example$dilation[i], 
+         col=fdakma_example_noalign_0der$labels[i])
+)  
+
+
+
+# How to choose the number of clusters and the warping method
+kma.compare_example_3 = kma.compare (
+  x=x, y0=y0, y1=y1, n.clust = 1:3, 
+  warping.method = c("NOalignment", "shift", "dilation", "affine"), 
+  similarity.method = 'd1.pearson',
+  center.method = 'k-means', 
+  # seeds = c(1,21,30), # suggest the starting center for groups
+  plot.graph=TRUE)
+```
+
