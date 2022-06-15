@@ -2,6 +2,20 @@
 # REGRESSION
 ######
 
+library(MASS)
+library(car)
+library(rgl)
+
+
+library(MASS)
+library(car)
+library(rgl)
+library(glmnet)
+library(ISLR)
+library(leaps)
+library(tree)
+
+
 ##### Basic regression + linear hyp + pred ####
 
 airfoil <- read.table('airfoil.txt', header=T)
@@ -21,7 +35,7 @@ airfoil$velocity <- factor(airfoil$velocity)
 #regression
 fit1 <- lm(sound ~ frequency*velocity, data = airfoil)   #I(velocity^2)
 summary(fit1)
-summary(fit2)$sigma^2 #sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
+summary(fit1)$sigma^2 #sum(residuals(fit1)^2)/fit1$df  # estimate of sigma^2
 fit1$coefficients
 shapiro.test(fit1$residuals)
 vif(fit1) # high => highly collinear with the other variables in the model
@@ -65,6 +79,10 @@ max <- predict(result4, df, interval = 'confidence', level = 0.99)[t.max,]
 p <- length(fm$coefficients)-1  # number of tested coefficients
 confint(fm, level= 1-0.05/p)[2:3,]  # Bonferroni correction!
 # Note: `confint()` returns the confidence intervals one-at-a-time; to have a global level 95% we need to include a correction
+
+
+
+
 
 
 

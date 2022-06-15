@@ -2,6 +2,8 @@
 # MULTIPLE POPULATIONS
 ######
 
+library(car)
+
 ###-----------------------------------------------------------------------------------------
 ##### INDEPENDENT - Test on mean, Bonferroni IC, pvalue, ellipse, test on reductions #####
 ###-----------------------------------------------------------------------------------------
@@ -39,7 +41,6 @@ cfr.fisher <- p*(n1 + n2 - 2)/(n1 + n2 - 1 - p)*qf(1-alpha, p, n1 + n2 - 1 - p)
 T2 < cfr.fisher
 
 ### Ellipsoidal region
-x11()
 plot(candle-sunshine, asp = 1)
 ellipse(m1 - m2, shape=Sp/(n1 + n2), sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
 points(0, 0, pch = 16, col = 'red', cex=1.5)
@@ -78,7 +79,6 @@ head(effluent)
 
 colnames(effluent) <- c('BOD_Lab1','SS_Lab1','BOD_Lab2','SS_Lab2')
 
-x11()
 pairs(effluent,pch=19, main='Dataset effluent')
 
 dev.off()
@@ -87,7 +87,6 @@ dev.off()
 D <- data.frame(DBOD=effluent[,1]-effluent[,3], DSS=effluent[,2]-effluent[,4]) 
 D
 
-x11()
 plot(D, asp=1, pch=19, main='Dataset of Differences')
 abline(h=0, v=0, col='grey35')
 points(0,0, pch=19, col='grey35')
@@ -113,7 +112,7 @@ delta.0 <- c(0,0)
 D.T2 <- n * (D.mean-delta.0) %*% D.invcov %*% (D.mean-delta.0)
 D.T2
 
-cfr.fisher <- ((n-1)*p/(n-p))*qf(1-alpha,p,n-p)
+cfr.fisher <- (n-1)*p/(n-p)*qf(1-alpha,p,n-p)
 cfr.fisher
 
 D.T2 < cfr.fisher # if FALSE we reject H0 at level 5%
@@ -123,7 +122,6 @@ P <- 1-pf(D.T2*(n-p)/(p*(n-1)), p, n-p)
 P
 
 # Ellipsoidal confidence region with confidence level 95%
-x11()
 plot(D, asp=1, pch=1, main='Dataset of the Differences',ylim=c(-15,60))
 ellipse(center=D.mean, shape=D.cov/n, radius=sqrt(cfr.fisher), lwd=2)
 
@@ -157,14 +155,13 @@ dim(pressure)
 
 mcshapiro.test(pressure)
 
-x11()
 matplot(t(pressure), type='l')
 
 # (a) Perform a test at level 5% to prove that the drug has influence on 
 #     the blood pressure during the 24 hours
 
 n <- dim(pressure)[1]
-q <- dim(pressure)[2]
+p <- dim(pressure)[2]
 
 M <- sapply(pressure,mean)
 S <- cov(pressure)
@@ -184,11 +181,11 @@ Sdinv <- solve(Sd)
 
 T2 <- n * t( Md - delta.0 ) %*% Sdinv %*% ( Md - delta.0 )
 
-cfr.fisher <- ((q-1)*(n-1)/(n-(q-1)))*qf(1-alpha,(q-1),n-(q-1)) 
+cfr.fisher <- ((p-1)*(n-1)/(n-(p-1)))*qf(1-alpha,(p-1),n-(p-1)) 
 
 T2 < cfr.fisher
 
-P <- 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
+P <- 1-pf(T2*(n-(p-1))/((p-1)*(n-1)),(p-1),n-(p-1))
 P
 
 # (b) Highlight the effect of the drug on the blood pressure
@@ -200,7 +197,7 @@ IC.T2 <- cbind( Md - sqrt(cfr.fisher*diag(Sd)/n) , Md, Md + sqrt(cfr.fisher*diag
 IC.T2
 
 # Bonferroni intervals 
-k     <- q - 1   # number of increments (i.e., dim(C)[1])
+k     <- p - 1   # number of increments (i.e., dim(C)[1])
 cfr.t <- qt(1-alpha/(2*k),n-1)
 
 IC.BF <- cbind( Md - cfr.t*sqrt(diag(Sd)/n) , Md, Md + cfr.t*sqrt(diag(Sd)/n) )

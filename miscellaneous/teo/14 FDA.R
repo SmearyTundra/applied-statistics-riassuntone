@@ -1,16 +1,29 @@
-#########
-# FUNCTIONAL
-#########
+###########################################################################
+##### FUNCTIONAL DATA ANALYSIS
+###########################################################################
+
+library(fda)
+library(KernSmooth)
+library(rgl)
+library(fdakma)
+library(fields)
+
 
 #### Reggression splines
 library(fda)
 
+# plot the data
+par(mfrow=c(1,1))
+matplot(t(data), type = 'l')
 
-norder <- 5      # spline order (4th order polynomials)
-degree <- norder-1    # spline degree
-nbasis <- 9      # how many basis we want
+# set the parameters
+norder <- 5         # spline order (4th order polynomials)
+degree <- norder-1  # spline degree
+nbasis <- 9         # how many basis we want
 
-basis <- create.bspline.basis(rangeval=c(0, 1),
+time/abscissa <- 1:24
+
+basis <- create.bspline.basis(rangeval=c(0, 1), # create.fourier.basis
                               nbasis=nbasis,
                               norder=norder)
 
@@ -98,49 +111,75 @@ library(KernSmooth)
 
 
 
-##### FPCA - BSPLINE + HARMONICS + SCORES  ####
-rm(list = ls())
-graphics.off()
-traffic <- read.table('traffic.txt')
-traffic <- t(traffic)
-matplot(traffic, type = 'l')
+###########################################################################
+##### FPCA FUNCTIONAL PRINCIPAL COMPONENT ANALYSIS AND BASIC STUFF
+###########################################################################
 
-nbasis <- 15
-time <- 1:24
-basis <- create.bspline.basis(rangeval=c(1,24), nbasis=nbasis, norder=4)
-data_W.fd.1 <- Data2fd(y = traffic,argvals = time,basisobj = basis)
-plot.fd(data_W.fd.1)
+# plot the data
+par(mfrow=c(1,1))
+matplot(t(data), type = 'l')
 
-data_W.fd.1$coefs
+# set the parameters
+norder <- 5         # spline order (4th order polynomials)
+degree <- norder-1  # spline degree
+nbasis <- 9         # how many basis we want
+
+time/abscissa <- 1:24
+
+basis <- create.bspline.basis(rangeval=c(0, 1), # create.fourier.basis
+                              nbasis=nbasis,
+                              norder=norder)
+
+# smooth
+data.fd.1 <- Data2fd(y=t(data), argvals=time, basisobj=basis)
+# plot smooth
+plot.fd(data.fd.1)
+
+# coefficients
+data.fd.1$coefs[howmany,whichobservation]
 
 #FPCA
-pca_W.1 <- pca.fd(data_W.fd.1,nharm=5,centerfns=TRUE)
-pca_W.1$varprop
-# scree plot
+pca.1 <- pca.fd(data.fd.1, nharm=5, centerfns=TRUE)
+pca.1$varprop
+# scree plot of eigenvalues and variance explained
 # pca.fd computes all the 365 eigenvalues, but only the first N-1=34 are non-null
-plot(pca_W.1$values[1:15],xlab='j',ylab='Eigenvalues')
-plot(cumsum(pca_W.1$values)[1:15]/sum(pca_W.1$values),xlab='j',ylab='CPV',ylim=c(0.8,1))
+plot(pca.1$values[1:15],xlab='j',ylab='Eigenvalues')
+plot(cumsum(pca.1$values)[1:15]/sum(pca.1$values),xlab='j',ylab='CPV',ylim=c(0.8,1))
 
+# how much explained by the first 3
+cumsum(pca.1$values)[3]/sum(pca.1$values)
+
+# plot eigenfunctions
 par(mfrow=c(1,3))
-plot(pca_W.1$harmonics[1,],col=1,ylab='FPC1',ylim=c(-0.3,0.4))
+plot(pca.1$harmonics[1,],col=1,ylab='FPC1',ylim=c(-0.3,0.4))
 abline(h=0,lty=2)
-plot(pca_W.1$harmonics[2,],col=2,ylab='FPC2',ylim=c(-0.3,0.4))
-plot(pca_W.1$harmonics[3,],col=1,ylab='FPC3',ylim=c(-0.3,0.4))
+plot(pca.1$harmonics[2,],col=2,ylab='FPC2',ylim=c(-0.3,0.4))
+plot(pca.1$harmonics[3,],col=1,ylab='FPC3',ylim=c(-0.3,0.4))
 
+
+# plot first 3 as perturbation of the mean
 par(mfrow=c(1,3))
-plot.pca.fd(pca_W.1, nx=100, pointplot=TRUE, harm=c(1,2,3), expand=0, cycle=FALSE)
-dev.off()
+plot.pca.fd(pca.1, nx=100, pointplot=TRUE, harm=c(1,2,3), expand=0, cycle=FALSE)
 
-plot(pca_W.1$scores[,1], pch = 16, xlab = 'DAY', ylab = 'PC1')
-plot(pca_W.1$scores[,2], pch = 16, xlab = 'DAY', ylab = 'PC2')
+# plot scores PC1 and PC2
+plot(pca.1$scores[, 1], pca.1$scores[, 2], xlab="Scores FPC1", ylab="Scores FPC2", lwd=2)
+points(pca.1$scores[1, 1], pca.1$scores[1, 2], col=3, lwd=4) # Day1
 
-plot(pca_W.1$scores[,1],pca_W.1$scores[,2],xlab="Scores FPC1",ylab="Scores FPC2",lwd=2)
+# observe single observation against and the mean
+media <- mean.fd(data.fd.1)
+day1 <- t(as.matrix(data[1,]))
+plot.fd(data.fd.1[1,])
+points(time,day1) # time = abscissa
+lines(media,lwd=2)
 
-##### CLUSTERING ####
+
+###########################################################################
+##### CLUSTERING
+###########################################################################
+
 rm(list=ls())
 spectra <- read.table('spectra.txt')
 spectra <- t(spectra)
-x11()
 matplot(spectra, type = 'l')
 
 nbasis <- 5:30
@@ -160,13 +199,16 @@ lsfit(basismat, spectra[,1], intercept=FALSE)$coef
 coefs <- smooth.basis(1:80, spectra[,1], basis)$fd$coefs[1:3]
 
 wl <- 1:80
-data_W.fd.1 <- Data2fd(y = spectra,argvals = wl,basisobj = basis)
-plot.fd(data_W.fd.1)
+data.fd.1 <- Data2fd(y = spectra,argvals = wl,basisobj = basis)
+plot.fd(data.fd.1)
 
 
 
 
-# kmean alignment
+
+###########################################################################
+##### kmean alignment
+###########################################################################
 
 library(fdakma)
 fdakma_example <- kma(

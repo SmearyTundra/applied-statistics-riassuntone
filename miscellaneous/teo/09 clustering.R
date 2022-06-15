@@ -2,6 +2,10 @@
 # CLUSTERING
 ######
 
+library(mvtnorm)
+library(rgl)
+library(car)
+
 n <- dim(data)[1] # number of samples
 misc <- sample(n) # random permutation
 
@@ -149,7 +153,6 @@ result.k$tot.withinss # sum(sum of squares nei cluster)
 result.k$betweenss    # sum of squares between clusters
 result.k$size         # dimention of the clusters
 
-x11()
 plot(data, col = result.k$cluster+1)
 
 # in 3d (not useful for exam)
@@ -173,7 +176,6 @@ for(k in 1:10){
   
 }
 
-x11()
 matplot(1:10, w/(w+b), pch='', xlab='clusters', ylab='within/tot', main='Choice of k', ylim=c(0,1))
 lines(1:10, w/(w+b), type='b', lwd=2)
 

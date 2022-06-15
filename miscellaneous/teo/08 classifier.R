@@ -2,6 +2,12 @@
 
 #for misclassification costs look at lab 8 line 470
 
+library(MASS)
+library(class)
+library(rgl)
+library(mvtnorm)
+library(e1071)
+library(ISLR)
 
 x <- data.frame(Infg = 0)
 predict(cyto.lda, x)$class
@@ -90,7 +96,6 @@ AERCV
 
 
 #CLASSIFICATION REGION
-x11()
 plot(sansiro[,1:2], main='Sansiro', xlab='temp', ylab='prec', pch=20, col = sansiro$opera)
 points(lda.san$means, pch=4,col=c('black','red','green') , lwd=2, cex=1.5)
 x  <- seq(min(sansiro[,1]), max(sansiro[,1]), length=200)
@@ -197,6 +202,48 @@ errorsqCV
 AERqCV   <- sum(errorsqCV)/length(species.name)
 AERqCV
 APERq
+
+
+# L1O Cross Validation AER WITH PRIOR
+QdaCV <- qda(d[,1:2], d$norm_abnorm, CV=TRUE, prior = c(abn,nor))  # specify the argument CV
+table(class.true=d$norm_abnorm, class.assignedCV=QdaCV$class)
+
+AERCV   <- (32*abn)/70 + (8*nor)/80
+cat("AERCV: ", AERCV)
+
+
+# ORRRR
+qn <- nrow(d)
+errors_CV_AB_NO <- 0
+errors_CV_NO_AB <- 0
+correct_NO <- 0
+correct_AB <- 0
+for(i in 1:n){
+    qdacv <- qda(d[-i,1:2], d[-i,3], prior=c(abn,nor))
+    errors_CV_AB_NO <- errors_CV_AB_NO + 
+        (as.numeric(predict(qdacv,d[i,1:2])$class == "NO" && d$norm_abnorm[i] == "AB"))
+    errors_CV_NO_AB <- errors_CV_NO_AB + 
+        (as.numeric(predict(qdacv,d[i,1:2])$class == "AB" && d$norm_abnorm[i] == "NO"))
+    correct_NO <- correct_NO + 
+        (as.numeric(predict(qdacv,d[i,1:2])$class == "NO" && d$norm_abnorm[i] == "NO"))
+    correct_AB <- correct_AB + 
+        (as.numeric(predict(qdacv,d[i,1:2])$class == "AB" && d$norm_abnorm[i] == "AB"))
+    
+}
+
+tab <- matrix(c(correct_AB, errors_CV_AB_NO, errors_CV_NO_AB, correct_NO), ncol=2, byrow=TRUE)
+
+colnames(tab) <- c('AB','NO')
+rownames(tab) <- c('AB','NO')
+tab <- as.table(tab)
+tab
+
+and then look at the table
+
+
+
+
+
 ###### KNN + CV ####
 library(class)
 MISS <- NULL
@@ -220,3 +267,16 @@ contour(x, y, matrix(z, 200), levels=c(1.5, 2.5), drawlabels=F, add=T)
 new.datum <- data.frame(x=1, y=-4)
 pred <- knn(train = debris[,1:2], test=new.datum, k = kopt, cl = debris$risk)
 
+
+
+
+
+
+SVM
+
+# Fit a Support Vector Machine (kernel = "radial") given a cost C
+svmfit <- svm(y~., data=dat [train ,], kernel ='radial', gamma =1, cost =1)
+summary(svmfit)
+
+# Plot the SVM
+plot(svmfit , dat, col =c('salmon', 'light blue'), pch=19, asp=1)

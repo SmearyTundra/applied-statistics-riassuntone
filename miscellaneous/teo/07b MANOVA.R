@@ -39,6 +39,9 @@ for(i in 1:g)
 Ps
 
 # 2) same covariance structure (= same covariance matrix Sigma)
+
+bartlett.test(d.numeric, as.factor(d$type1):as.factor(d$type2)) # two way
+
 S  <-  cov(iris4)
 S1 <-  cov(iris4[i1,])
 S2 <-  cov(iris4[i2,])
@@ -50,7 +53,6 @@ round(S1,digits=1)
 round(S2,digits=1)
 round(S3,digits=1)
 
-x11(width=21)
 par(mfrow=c(1,3))
 image(S1, col=heat.colors(100),main='Cov. S1', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2,S3), (0:100)/100, na.rm=TRUE))
 image(S2, col=heat.colors(100),main='Cov. S2', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2,S3), (0:100)/100, na.rm=TRUE))
@@ -130,21 +132,18 @@ plastic3  <- plastic[,3:5]
 
 ### Graphical exploration of the data
 # effect of the treatments + their interaction on the first variable
-x11()
 layout(matrix(c(1,1,2,3), 2, byrow=T))
 boxplot(plastic3[,1]~ExAd, main='Model with Interac. Extrusion+Additive (Tear Resistance)', ylab='Tr', col='grey95')
 boxplot(plastic3[,1]~Ex,   main='Only Factor Extrusion'  , ylab='Tr', col=c('red','blue'))
 boxplot(plastic3[,1]~Ad,   main='Only Factor Additive'   , ylab='Tr', col=c('forestgreen','gold'))
 
 # effect of the treatments + their interaction on the second variable
-x11()
 layout(matrix(c(1,1,2,3), 2, byrow=T))
 boxplot(plastic3[,2]~ExAd, main='Model with Interac. Extrusion+Additive (Gloss)', ylab='Gl', col='grey95')
 boxplot(plastic3[,2]~Ex,   main='Only Factor Extrusion'  , ylab='Gl', col=c('red','blue'))
 boxplot(plastic3[,2]~Ad,   main='Only Factor Additive'   , ylab='Gl', col=c('forestgreen','gold'))
 
 # effect of the treatments + their interaction on the third variable
-x11()
 layout(matrix(c(1,1,2,3), 2, byrow=T))
 boxplot(plastic3[,3]~ExAd, main='Model with Interac. Extrusion+Additive (Opacity)', ylab='Op', col='grey95')
 boxplot(plastic3[,3]~Ex,   main='Only Factor Extrusion'  , ylab='Op', col=c('red','blue'))
@@ -173,7 +172,6 @@ S2 <-  cov(plastic3[ ExAd==levels(ExAd)[2], ])
 S3 <-  cov(plastic3[ ExAd==levels(ExAd)[3], ])
 S4 <-  cov(plastic3[ ExAd==levels(ExAd)[4], ])
 
-x11(width=21)
 par(mfrow=c(1,4))
 image(S1, col=heat.colors(100),main='Cov. S1', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2,S3,S4), (0:100)/100, na.rm=TRUE))
 image(S2, col=heat.colors(100),main='Cov. S2', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2,S3,S4), (0:100)/100, na.rm=TRUE))
@@ -242,7 +240,6 @@ IC2   <- list(ExH_ExL=cbind(infEx, supEx), AdH_AdL=cbind(infAd, supAd))
 IC2
 
 
-x11(width=21, height = 14)
 par(mfrow=c(3,4))
 boxplot(plastic3[,1]~Ex,   main='Fact.: Extrusion (Tear Resistance)'  , ylab='Tr', col=rainbow(2*6)[c(1,2)], ylim=c(-2,10))
 plot(c(1,g*(g-1)/2),range(IC2[[1]][1,]), pch='',main='IC (tau.1-tau.2)[1]',xlab='pairs treat', ylab='IC (tau.1-tau.2)[1]', ylim=c(-2,10))

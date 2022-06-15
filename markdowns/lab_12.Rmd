@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
 \newpage
 
 ```{r include=FALSE}
@@ -21,10 +26,8 @@ Topics:
      3.2 AR(1)
      3.3 general
 
-```{r }
+```{r message=FALSE}
 rm(list=ls())
-graphics.off()
-
 
 library(nlmeU) # --> for the dataset
 library(nlme)  # --> for models implementation
@@ -33,23 +36,17 @@ library(corrplot)
 library(lattice)
 library(plot.matrix)
 
-data(armd) # Age-Related Macular Degeneration: dataset of interest
+data(armd)  # Age-Related Macular Degeneration: dataset of interest
 data(armd0) # Age-Related Macular Degeneration: dataset for visualization
 help(armd)
 ```
 
-The ARMD data arise from a randomized multi-center clinical trial comparing an experimental treatment (interferon-alpha) 
-versus placebo for patients diagnosed with ARMD. Patients with ARMD progressively lose vision.
-The dataset contains information about 234 subjects, for which the visual level is measured up to 4 times.
-We are mainly interested in the effect of treatment on the visual acuity measurements.
-The ARMD0 dataset contains the same information, but with an extra row for each patient relative 
-to the measurement at time 0. ARMD0 contains 240 subjects.  
-Visual-acuity profiles for selected patients --> we visualize some of the trends
+The **ARMD** data arise from a randomized multi-center clinical trial comparing an experimental treatment (interferon-alpha) versus placebo for patients diagnosed with ARMD. Patients with ARMD progressively lose vision. The dataset contains information about 234 subjects, for which the visual level is measured up to 4 times. We are mainly interested in the effect of treatment on the visual acuity measurements. The ARMD0 dataset contains the same information, but with an extra row for each patient relative to the measurement at time 0. ARMD0 contains 240 subjects. Visual-acuity profiles for selected patients --> we visualize some of the trends
 
 ```{r }
 armd0.subset <- subset(armd0, as.numeric(subject) %in% seq(1, 240, 5)) # one each 5 patients
 
-xy1 <- xyplot(visual ~ time | treat.f,   
+xy1 <- xyplot(visual ~ time | treat.f,
                  groups = subject,
                  data = armd0.subset,
                  type = "l", lty = 1)
@@ -59,8 +56,9 @@ update(xy1, xlab = "Time (in weeks)",
 ```
 
 We observe a decreasing trend in time, on average, but patients have very different trends.
-Also, Active patients have on average lower values of the response.
-sample means across time and treatment
+Also, `Active` patients have on average lower values of the response.
+
+Sample means across time and treatment
 
 ```{r }
 flst <- list(armd$time.f, armd$treat.f)
@@ -68,8 +66,9 @@ tMn <- tapply(armd$visual, flst, FUN = mean)
 tMn
 ```
 
-We confirm what we observe in the plot
-Box-plots for visual acuity by treatment and time
+We confirm what we observe in the plot.
+
+Box-plots for visual acuity by treatment and time.
 
 ```{r }
 bw1 <- bwplot(visual ~ time.f | treat.f,
@@ -79,29 +78,29 @@ update(bw1, xlim = xlims, pch = "|")
 ```
 
 
-1. Linear Models with homogeneous and independent errors: we start by considering all 
-   observations as independent, with homogeneous variance
-LM: VISUAL_it = b_0t + b1 ? VISUAL_0i + b_2t ? TREAT_i + e_it
-b_0t, b_1, and b_2t denote the timepoint-specific intercept, 
-baseline visual acuity effect, and timepoint-specific treatment effect.
-Thus, the model assumes a time-dependent treatment effect,
-with the time variable being treated as a factor.
-To obtain timepoint-specific intercepts at 4,12,24 and 52 weeks, 
-the overall intercept is removed from the model by specifying the -1 term.
+## LM1: Linear Models with homogeneous and independent errors
+
+We start by considering all observations as independent, with homogeneous variance
+$$
+\texttt{VISUAL}_{it} = \beta_{0t} + \beta_1 \cdot \texttt{VISUAL_0}_{i} + \beta_{2t} \cdot \texttt{TREAT}_i + \varepsilon_{it}
+$$
+$\beta_{0t}, \beta_1$, and $\beta_{2t}$ denote the timepoint-specific intercept, baseline visual acuity effect, and timepoint-specific treatment effect.
+Thus, the model assumes a time-dependent treatment effect, with *the time variable being treated as a factor*.
+To obtain timepoint-specific intercepts at 4, 12, 24 and 52 weeks, the overall intercept is removed from the model by specifying the `-1` term.
 
 ```{r }
 lm1.form <- lm(visual ~ -1 + visual0 + time.f + treat.f:time.f, data = armd )
 summary(lm1.form)
 ```
 
-variance-covariance matrix of Y  --> it is a diagonal matrix with a value of 12.38^2
+Variance-covariance matrix of Y. It is a diagonal matrix with a value of 12.38^2
 
 ```{r }
 par(mar = c(4,4,4,4))
 plot(diag(x=12.38^2,nrow=30, ncol=30), main='Variance-covariance matrix of Y')
 ```
 
-residual analysis
+Residual analysis
 
 ```{r }
 plot(lm1.form$residuals) # they seem quite homoscedastic
@@ -113,11 +112,10 @@ qqline(lm1.form$residuals)
 shapiro.test(lm1.form$residuals)
 ```
 
-But we know that observations are not independent and that the variance of the visual measurements increases in time
-let's color the residuals relative to different patients
+But we know that observations are **not independent** and that the variance of the visual measurements increases in time let's color the residuals relative to different patients.
 
 ```{r }
-colori =rainbow(length(unique(armd$subject)))
+colori = rainbow(length(unique(armd$subject)))
 num_sub = table(armd$subject)
 colori2 = rep(colori, num_sub)
 plot(lm1.form$residuals, col=colori2)
@@ -127,11 +125,11 @@ boxplot(lm1.form$residuals ~ armd$subject, col=colori,
         xlab='Subjects', ylab='Residuals', main ='Distribution of residuals across patients')  # --> informative!
 ```
 
-let's color the residuals relative to different time instants
+Let's color the residuals relative to different time instants
 
 ```{r }
 set.seed(1)
-colori =rainbow(4)
+colori = rainbow(4)
 colori2 = colori[armd$tp] # associate to each one of the 4 time instants a color
 plot(lm1.form$residuals, col=colori2, ylab='residuals')
 abline(h=0)
@@ -139,24 +137,24 @@ legend(650, -25, legend=c("time 4wks", "time 12wks", "time 24wks", "time 52wks")
        col=colori, lty=1, cex=0.8)
 ```
 
-Note: we observe that red points are the closest to 0, purple ones are the farthest
-We expect the residuals to be heterogeneous across different time instants observations
+Note: we observe that red points are the closest to 0, purple ones are the farthest.
+We expect the residuals to be heterogeneous across different time instants observations.
 
 ```{r }
 boxplot(lm1.form$residuals ~ armd$time.f, col=colori,
         xlab='Time.f', ylab='Residuals')  # -> the variance of the observations increases in time
 ```
 
-The model does not take into account the correlation 
-between the visual acuity observations obtained from the same subject. 
+The model does not take into account the correlation
+between the visual acuity observations obtained from the same subject.
 It also does not take into account the heterogeneous variability
 present at different time points. Thus, it should not be used as a basis for inference.
 
-2. Linear models with heteroscedastic and independent errors
-We know that variance increases in time --> we model the variance as a function of time
-We have different possibilities
-gls() function allows the inclusion of dependency and heteroscedasticity
-2.1 Option 1: VarIdent()
+## LM2: Linear Models with heteroscedastic and independent errors
+
+We know that variance increases in time: we model the variance as a function of time. We have different possibilities: `gls()` function allows the inclusion of dependency and heteroscedasticity.
+
+### Option 1: `VarIdent()`
 
 ```{r }
 fm9.1 <- gls(visual ~ -1 + visual0 + time.f + treat.f:time.f,  # the same as before
@@ -164,10 +162,10 @@ fm9.1 <- gls(visual ~ -1 + visual0 + time.f + treat.f:time.f,  # the same as bef
              data = armd)
 summary(fm9.1)
 
-plot(fm9.1$residuals) 
+plot(fm9.1$residuals)
 
 fm9.1$modelStruct$varStruct
-intervals(fm9.1, which = "var-cov")  # 95% CI
+intervals(fm9.1, which = "var-cov", level = 0.95) # the first one is assumed to be 1 and the others are scaled on that one
 ```
 
 Visualization of Variance-covariance matrix of Y (first 30 observations)
@@ -178,14 +176,14 @@ plot(diag(x=c(1.000000^2*8.244094^2, 1.397600^2*8.244094^2, 1.664321^2*8.244094^
      main='Variance-covariance matrix of Y - VarIdent()')
 ```
 
-To formally test the hypothesis that the variances are timepoint specific, 
-we apply the anova() function. The LR test tests the null hypothesis of homoscedasticity.
+To formally test the hypothesis that the variances are timepoint specific, we apply the `anova()` function. The LR test tests the null hypothesis of homoscedasticity.
 
 ```{r }
 anova(fm9.1, lm1.form)  # lm1.form C fm9.1
 ```
 
-2.2 Option 2: VarPower()
+### Option 2: `VarPower()`
+
 Now that we know the variance is increasing in time, we try a more parsimonious model
 
 ```{r }
@@ -212,15 +210,15 @@ anova(fm9.2, fm9.1)
 AIC(fm9.2, fm9.1)  # --> fm9.2 is better in terms of AIC and parsimony!
 ```
 
-Residual analysis --we assess the fit of the model using residual plots. 
-raw residuals 
+### Residual analysis
+
+We assess the fit of the model using residual plots.
 
 ```{r }
 plot(fm9.2, resid(., type = "response") ~ fitted(.)) # Raw vs. fitted
 ```
 
-We observe an asymmetric pattern, with large positive (negative) residuals present mainly for small (large) fitted values.
-but it can be a consequence of the fact that raw residuals are intrinsically heteroscedastic and correlated.
+We observe an asymmetric pattern, with large positive (negative) residuals present mainly for small (large) fitted values. But it can be a consequence of the fact that raw residuals are intrinsically heteroscedastic and correlated.
 
 ```{r }
 plot(fm9.2, resid(., type = "response") ~ time) # Raw vs. time (not shown)
@@ -228,26 +226,26 @@ bwplot(resid(fm9.2) ~ time.f, pch = "|", data = armd)
 ```
 
 The boxand-whiskers plots clearly show an increasing variance of the residuals.
-Pearson residuals 
-Pearson residuals are obtained from the raw residuals by dividing the latter by an
-estimate of the appropriate residual standard deviation, so they should be more homoscedastic
+
+Pearson residuals are obtained from the raw residuals by dividing the latter by an estimate of the appropriate residual standard deviation, so they should be more homoscedastic
 
 ```{r }
 plot(fm9.2, resid(., type = "pearson" ) ~ fitted(.)) # Pearson vs. fitted
-plot(fm9.2,resid(., type = "pearson") ~ time) 
+plot(fm9.2,resid(., type = "pearson") ~ time)
 bwplot( resid(fm9.2, type = "pearson") ~ time.f, # Pearson vs. time.f
         pch = "|", data = armd)
 ```
 
 this plot illustrate the effect of scaling: the variance of the residuals is virtually constant.
 
-3. Linear models with heteroscedastic and dependent errors
+## LM3 Linear models with heteroscedastic and dependent errors
+
 We now modify the model, so that the visual acuity measurements,
 obtained for the same individual, are allowed to be correlated.
-We can estimate the semivariogram to calculate correlation coefficients between Pearson
-residuals for every pair of timepoints, separately. 
+We can estimate the semivariogram to calculate correlation coefficients between Pearson residuals for every pair of timepoints, separately.
 The semivariogram function can be defined as the complement of the correlation function.
-Variogram per time difference 
+
+Variogram per time difference
 
 ```{r }
 Vg1 <- Variogram(fm9.2, form = ~ time | subject)
@@ -258,17 +256,15 @@ plot(Vg1, smooth = FALSE, xlab = "Time difference",ylim=c(0,0.7))
 Variogram per time lag
 
 ```{r }
-Vg2 <- Variogram(fm9.2, form = ~tp | subject)
+# tp is as.numeric(time.f)
+Vg2 <- Variogram(fm9.2, form = ~ tp | subject)
 Vg2
 plot(Vg2, smooth = FALSE, xlab = "Time Lag",ylim=c(0,0.7))
 ```
 
-From these two plots we see that correlation decreases with time lag/difference
-Therefore, a  correlation structure like, e.g., a compound symmetry, will most likely not fit the data well. 
-A more appropriate structure might be, e.g., an autoregressive process of order 1 AR(1). 
-Nevertheless, for illustrative purposes, we consider a model with a compound symmetry
-correlation structure.
-3.1 Correlation 1: CorCompSym()
+From these two plots we see that correlation decreases with time lag/difference. Therefore, a  correlation structure like, e.g., a compound symmetry, will most likely not fit the data well. A more appropriate structure might be, e.g., an autoregressive process of order 1 AR(1). Nevertheless, for illustrative purposes, we consider a model with a compound symmetry correlation structure.
+
+### Correlation 1: CorCompSym()
 
 ```{r }
 lm1.form <- formula(visual ~ -1 + visual0 + time.f + treat.f:time.f )
@@ -280,7 +276,8 @@ summary(fm12.1)
 intervals(fm12.1, which = "var-cov")
 ```
 
-With the estimates of rho, sigma and delta we can estimate the var-cov matrix
+With the estimates of rho, sigma and delta we can estimate the var-cov matrix.
+
 The marginal variance-covariance structure
 
 ```{r }
@@ -291,8 +288,9 @@ dimnames(fm12.1vcov) <- dnms # Dimnames assigned
 print(fm12.1vcov)
 ```
 
-on the diagonal we have (5.981515^2)*TIME^(2*0.2598167)
-out of the diagonal we have (5.981515^2)*TIME_1^(0.2598167)*TIME_2^(0.2598167)*rho
+- On the diagonal we have `(5.981515^2)*TIME^(2*0.2598167)`
+- Out of the diagonal we have `(5.981515^2)*TIME_1^(0.2598167)*TIME_2^(0.2598167)*rho`
+
 Visualization of the marginal variance-covariance matrix of Y
 
 ```{r }
@@ -316,12 +314,12 @@ Test of independence vs. compound-symmetry correlation structure
 anova(fm9.2, fm12.1) # M9.2 C M12.1
 ```
 
-The result of the LR test is clearly statistically significant, indicating
-the importance of the adjustment for the correlation in modeling the data
-3.2 Correlation 2: AR(1)
+The result of the LR test is clearly statistically significant, indicating the importance of the adjustment for the correlation in modeling the data
+
+### Correlation 2: AR(1)
 
 ```{r }
-fm12.2 <- update(fm9.2, 
+fm12.2 <- update(fm9.2,
                  correlation = corAR1(form = ~tp|subject),
                  data = armd)
 summary(fm12.2)
@@ -336,13 +334,13 @@ dimnames(fm12.2vcov) <- dnms
 fm12.2vcov
 ```
 
-on the diagonal we have (6.356295^2)*TIME^(2*0.2311874)
-out of the diagonal we have (6.35629^2)*4^(0.2311874)*12^(0.2311874)*0.6573069
-                            (6.35629^2)*4^(0.2311874)*24^(0.2311874)*0.6573069^2...
+- On the diagonal we have `(6.356295^2)*TIME^(2*0.2311874)`
+- Out of the diagonal we have `(6.35629^2)*4^(0.2311874)*12^(0.2311874)*0.6573069`
+                            `(6.35629^2)*4^(0.2311874)*24^(0.2311874)*0.6573069^2...`
 
 ```{r }
 fm12.2cor <- cov2cor(fm12.2vcov)  #Estimate of C_i
-print(fm12.2cor, digits = 2, 
+print(fm12.2cor, digits = 2,
         corr = TRUE, stdevs = FALSE)
 ```
 
@@ -352,8 +350,9 @@ Compound-symmetry vs. autoregressive correlation (nonnested models)
 anova(fm12.1, fm12.2)
 ```
 
-we prefer AR(1)
-3.3 Correlation 3: general correlation structure
+We prefer AR(1)
+
+### Correlation 3: general correlation structure
 
 ```{r }
 fm12.3 <- update(fm12.2, correlation = corSymm(form = ~tp|subject),  # the variance function is still VarPower()
@@ -371,14 +370,15 @@ fm12.3cor <- cov2cor(fm12.3vcov)    # Estimate of C_i
 print(fm12.3cor, corr = TRUE, stdevs = FALSE)
 ```
 
-Autoregressive of order 1 vs. a general correlation structure
+AutoRegressive of order 1 vs. a general correlation structure
 
 ```{r }
-anova(fm12.2, fm12.3) # M12.2 C M12.3 --> we prefer M12.3 
+anova(fm12.2, fm12.3) # M12.2 C M12.3 --> we prefer M12.3
 ```
 
-Model-Fit Diagnostics
-(a) Plots (and boxplots) of raw residuals
+### Model-Fit Diagnostics
+
+#### Plots (and boxplots) of raw residuals
 
 ```{r }
 panel.bwxplot0 <- function(x,y, subscripts, ...){
@@ -386,28 +386,25 @@ panel.bwxplot0 <- function(x,y, subscripts, ...){
                         panel.stripplot(x, y, col = "grey", ...)
                         panel.bwplot(x, y, pch = "|", ...)
                         }
-bwplot(resid(fm12.3) ~ time.f | treat.f, 
+bwplot(resid(fm12.3) ~ time.f | treat.f,
          panel = panel.bwxplot0,
          ylab = "Residuals", data = armd)
 ```
 
-The box-and-whiskers plots clearly show an increasing variance of the residuals with timepoint. This reflects the
-heteroscedasticity.
-(b) Plots of Pearson residuals vs. fitted values
-Pearson residuals are obtained from the raw residuals by dividing the latter by an
-estimate of the appropriate residual standard deviation, so they should be more homoscedastic
+The box-and-whiskers plots clearly show an increasing variance of the residuals with timepoint. This reflects the heteroscedasticity.
+
+#### Plots of Pearson residuals vs. fitted values
+
+Pearson residuals are obtained from the raw residuals by dividing the latter by an estimate of the appropriate residual standard deviation, so they should be more homoscedastic
 
 ```{r }
-plot(fm12.3) 
+plot(fm12.3)
 ```
 
-Due to the correlation of the residuals corresponding to the measurements obtained
-for the same patient at different timepoints, the plot reveals a pattern, with a few
-large, positive residuals in the upper-left part and a few negative ones in the lower-right part.
-We therefore decide to visualize the residuals for each time instants
+Due to the correlation of the residuals corresponding to the measurements obtained for the same patient at different timepoints, the plot reveals a pattern, with a few large, positive residuals in the upper-left part and a few negative ones in the lower-right part. We therefore decide to visualize the residuals for each time instants
 
 ```{r }
-plot(fm12.3, 
+plot(fm12.3,
        resid(., type = "p") ~ fitted(.) | time.f)
 stdres.plot <-
         plot(fm12.3, resid(., type = "p") ~ jitter(time) | treat.f,
@@ -417,10 +414,6 @@ plot(update(stdres.plot, # Fig. 12.4
 ```
 
 The four scatterplots show a somewhat more balanced pattern.
-
- Applied Statistics 2021/2022
- Linear Mixed-effects models
-
 
 ```{r }
 library(nlmeU)
@@ -432,45 +425,42 @@ library(lme4)
 library(insight)
 
 rm(list=ls())
-graphics.off()
 ```
 
-Topics:
-  LINEAR MIXED MODELS WITH HOMOSCEDASTIC RESIDUALS
-  1. Linear Models with random intercept (q=0) 
+
+## LINEAR MIXED MODELS WITH HOMOSCEDASTIC RESIDUALS
+  
+  1. Linear Models with random intercept (q=0)
   2. Linear Models with random intercept + slope (q=1)
      2.1 general structure of D
-     2.2 diagonal D 
+     2.2 diagonal D
   3. Interpretation of random effects and PVRE
   4. Prediction
   5. Diagnostic
-  6. Models comparison 
+  6. Models comparison
 
-  SUPPLEMENTARY MATERIAL: LINEAR MIXED MODELS WITH HETEROSCEDASTIC RESIDUALS (VarPower())
-  1. Linear Models with random intercept (q=0) 
+SUPPLEMENTARY MATERIAL: LINEAR MIXED MODELS WITH HETEROSCEDASTIC RESIDUALS (VarPower())
+  1. Linear Models with random intercept (q=0)
   2. Linear Models with random intercept + slope (q=1)
      2.1 general structure of D
-     2.2 diagonal D  
+     2.2 diagonal D
 
 ```{r }
 data(armd) # Age-Related Macular Degeneration
 ```
 
-Linear Mixed-Effects models (LMM)
-In the LMM approach, the hierarchical structure of the data is directly addressed, 
-with random effects that describe the contribution of the variability at different levels 
-of the hierarchy to the total variability of the observations.
-Two main R packages: 
-1. 'lme4' --> it does not handle heteroscedastic residuals but it has a lot of "accessories"
-2. 'nlme' --> it handles heteroscedastic residuals but it has less "accessories"
-We will use lmer() function in lme4 package for LMM models with homogeneous residuals and
-lme() function in nlme package for LMM models with heteroscedastic residuals
+In the LMM approach, the hierarchical structure of the data is directly addressed, with random effects that describe the contribution of the variability at different levels of the hierarchy to the total variability of the observations.
 
-LINEAR MIXED MODELS WITH HOMOSCEDASTIC RESIDUALS
-lme4 package --> lmer() function
+Two main R packages:
+
+- `lme4`: it does not handle heteroscedastic residuals but it has a lot of "accessories"
+- `nlme`: it handles heteroscedastic residuals but it has less "accessories"
+
+We will use `lmer()` function in `lme4` package for LMM models with homogeneous residuals and `lme()` function in `nlme` package for LMM models with heteroscedastic residuals.
 
 
-Model 1. Random intercept, homoscedastic residuals
+### Model 1. Random intercept, homoscedastic residuals
+
 We now treat time as a numeric variables
 
 ```{r }
@@ -485,9 +475,9 @@ confint(fm16.1mer,oldNames=TRUE)
 Var-Cov matrix of fixed-effects
 
 ```{r }
-vcovb <- vcov(fm16.1mer) 
+vcovb <- vcov(fm16.1mer)
 vcovb
-corb <- cov2cor(vcovb) 
+corb <- cov2cor(vcovb)
 nms <- abbreviate(names(fixef(fm16.1mer)), 5)
 rownames(corb) <- nms
 corb
@@ -513,38 +503,35 @@ A <- getME(fm16.1mer, "A") # A  --> N x n, A represents the D (not italic)
 I.n <- Diagonal(ncol(A)) # IN  --> n x n
 ```
 
-the conditional variance-covariance matrix of Y (diagonal matrix)
+The conditional variance-covariance matrix of Y (diagonal matrix)
 
 ```{r }
 SigmaErr = sgma^2 * (I.n)
 SigmaErr[3:6, 3:6]  # visualization of individual 2
 ```
 
-Conditioned to the random effects b_i, we observe the var-cov of the errors
-that are independent and homoscedastic
-we visualize the first 20 rows/columns of the matrix
+Conditioned to the random effects b_i, we observe the var-cov of the errors that are independent and homoscedastic. We visualize the first 20 rows/columns of the matrix
 
 ```{r }
 plot(as.matrix(SigmaErr[1:20,1:20]), main = 'Conditional estimated Var-Cov matrix of Y')
 ```
 
-the marginal variance-covariance matrix of Y (block-diagonal matrix)
+The marginal variance-covariance matrix of Y (block-diagonal matrix)
 
 ```{r }
 V <- sgma^2 * (I.n + crossprod(A)) # V = s^2*(I_N+A*A) --> s^2*(I_N) is the error part, s^2*(A*A) is the random effect part
 V[3:6, 3:6]  #-> V is a block-diagional matrix, the marginal var-cov matrix
 ```
 
-visualization of the first 20 rows/columns
+Visualization of the first 20 rows/columns
 
 ```{r }
 plot(as.matrix(V[1:20,1:20]), main = 'Marginal estimated Var-Cov matrix of Y')
 ```
 
-Another way to interpret the variance output is to note percentage of the subject variance out 
-of the total, i.e. the Percentage of Variance explained by the Random Effect (PVRE).
-This is also called the intraclass correlation (ICC), because it is also an estimate of the within 
-cluster correlation.
+Another way to interpret the variance output is to note percentage of the subject variance out of the total, i.e. the Percentage of Variance explained by the Random Effect (PVRE).
+
+This is also called the intraclass correlation (ICC), because it is also an estimate of the within cluster correlation.
 
 ```{r }
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
@@ -552,18 +539,19 @@ PVRE # 51% is very high!
 ```
 
 visualization of the random intercepts with their 95% confidence intervals
+
 Random effects: b_0i for i=1,...,234
 
 ```{r }
 dotplot(ranef(fm16.1mer, condVar=T))
 ```
 
-The dotplot shows the point and interval estimates for the random effects, 
-ordering them and highlighting which are significantly different from the mean (0)
-Prediction
--------------
+The dotplot shows the point and interval estimates for the random effects, ordering them and highlighting which are significantly different from the mean (0)
+
+#### Prediction
+
 Let's now examine standard predictions vs. subject-specific predictions.
-As with most R models, we can use the predict function on the model object.
+As with most R models, we can use the `predict` function on the model object.
 Prediction from regression model
 
 ```{r }
@@ -575,14 +563,15 @@ head(predict_lm)
 ```
 
 Prediction from mixed model on the training set:
-1) Without random effects ->  re.form=NA
+
+1. Without random effects -> `re.form=NA`
 
 ```{r }
 predict_no_re <- predict(fm16.1mer, re.form=NA)
 head(predict_no_re) # (almost) same predictions
 ```
 
-2) With random effects
+2. With random effects
 
 ```{r }
 predict_re <- predict(fm16.1mer)
@@ -595,14 +584,14 @@ Prediction from mixed model on a test observation from a subject present in the 
 test.data= data.frame(subject= '234', treat.f='Active', visual0= 63, time = 12)
 ```
 
-1) Without random effects ->  re.form=NA
+1. Without random effects ->  re.form=NA
 
 ```{r }
 predict_no_re <- predict(fm16.1mer, newdata = test.data, re.form=NA)
 predict_no_re # (9.28808 + 0.82644*test.data$visual0 -0.21222*test.data$time -2.42200  -0.04959*test.data$time )
 ```
 
-2) With random effects
+2. With random effects
 
 ```{r }
 predict_re <- predict(fm16.1mer, newdata = test.data)
@@ -619,17 +608,17 @@ re[row.names(re)==test.data$subject,]
 Prediction from mixed model on a test observation from a subject not present in the training set:
 
 ```{r }
-test.data= data.frame(subject= '400', treat.f='Active', visual0= 63, time = 12)
+test.data = data.frame(subject= '400', treat.f='Active', visual0= 63, time = 12)
 ```
 
-1) Without random effects ->  re.form=NA
+1. Without random effects ->  re.form=NA
 
 ```{r }
 predict_no_re <- predict(fm16.1mer, newdata = test.data, re.form=NA)
 predict_no_re # the same as before
 ```
 
-2) With random effects
+2. With random effects
 
 ```
 predict_re <- predict(fm16.1mer, newdata = test.data)
@@ -642,9 +631,9 @@ predict_re <- predict(fm16.1mer, newdata = test.data, allow.new.levels = T)
 predict_re # the same as before, it uses the average of the random intercept, i.e. 0
 ```
 
-Diagnostic plots 
---------------------
-1) Assessing Assumption on the within-group errors
+#### Diagnostic plots
+
+1. Assessing Assumption on the within-group errors
 
 ```{r }
 plot(fm16.1mer)  # Pearson and raw residuals are the same now
@@ -653,16 +642,16 @@ qqnorm(resid(fm16.1mer))
 qqline(resid(fm16.1mer), col='red', lwd=2)
 ```
 
-2) Assessing Assumption on the Random Effects
+2. Assessing Assumption on the Random Effects
 
 ```{r }
 qqnorm(unlist(ranef(fm16.1mer)$subject), main='Normal Q-Q Plot - Random Effects on Intercept')
 qqline(unlist(ranef(fm16.1mer)$subject), col='red', lwd=2)
 ```
 
+### Model 2: random intercept + slope and homoscedastic residuals
 
-Model 2: random intercept + slope and homoscedastic residuals
-Model 2.1: general D
+#### Model 2.1: general D
 
 ```{r }
 fm16.2mer <- lmer(visual ~ visual0 + time * treat.f + (1+time|subject),
@@ -672,9 +661,9 @@ fm16.2mer <- lmer(visual ~ visual0 + time * treat.f + (1+time|subject),
 summary(fm16.2mer)
 confint(fm16.2mer,oldNames=TRUE)
 
-vcovb <- vcov(fm16.2mer) 
+vcovb <- vcov(fm16.2mer)
 vcovb
-corb <- cov2cor(vcovb) 
+corb <- cov2cor(vcovb)
 nms <- abbreviate(names(fixef(fm16.2mer)), 5)
 rownames(corb) <- nms
 corb
@@ -702,8 +691,7 @@ SigmaErr = sgma^2 * (I.n)
 SigmaErr[3:6, 3:6]  # visualization of individual 2
 ```
 
-Conditioned to the random effects b_i, we observe the var-cov of the errors
-that are independent and homoscedastic
+Conditioned to the random effects b_i, we observe the var-cov of the errors that are independent and homoscedastic
 
 ```{r }
 plot(as.matrix(SigmaErr[1:20,1:20]), main = 'Conditional estimated Var-Cov matrix of Y')
@@ -722,11 +710,10 @@ visualization of the first 20 rows/columns
 plot(as.matrix(V[1:20,1:20]), main = 'Marginal estimated Var-Cov matrix of Y')
 ```
 
-PVRE
---------------------
-In this case the variance of random sigma2_R effects represents the mean random 
-effect variance of the model and is given by
-sigma2_b = Var(b0,b1) = sigma2_b0 + 2Cov(b0,b1)*mean(w) + sigma2_b1*mean(w^2)
+##### PVRE
+
+In this case the variance of random sigma2_R effects represents the mean random effect variance of the model and is given by
+`sigma2_b = Var(b0,b1) = sigma2_b0 + 2Cov(b0,b1)*mean(w) + sigma2_b1*mean(w^2)`
 See equation (10) in Johnson (2014), Methods in Ecology and Evolution, 5(9), 944-946.
 
 ```{r }
@@ -739,26 +726,27 @@ PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
 PVRE # 72% is very high!
 ```
 
-visualization of the random intercepts with their 95% confidence intervals
+Visualization of the random intercepts with their 95% confidence intervals
+
 Random effects: b_0i, b_1i for i=1,...,234
 
 ```{r }
 dotplot(ranef(fm16.2mer, condVar=T))
 ```
 
-Comparing models
-------------------
-The anova function, when given two or more arguments representing fitted models,
-produces likelihood ratio tests comparing the models.
+##### Comparing models
+
+The `anova` function, when given two or more arguments representing fitted models, produces likelihood ratio tests comparing the models.
 
 ```{r }
 anova(fm16.1mer, fm16.2mer)
 ```
 
 The p-value for the test is essentially zero -> we prefer fm16.2mer
-Diagnostic plots 
---------------------
-1) Assessing Assumption on the within-group errors
+
+##### Diagnostic plots
+
+1. Assessing Assumption on the within-group errors
 
 ```{r }
 plot(fm16.2mer)
@@ -767,7 +755,7 @@ qqnorm(resid(fm16.2mer))
 qqline(resid(fm16.2mer), col='red', lwd=2)
 ```
 
-2) Assessing Assumption on the Random Effects
+2. Assessing Assumption on the Random Effects
 
 ```{r }
 qqnorm(unlist(ranef(fm16.2mer)$subject[,1]), main='Normal Q-Q Plot - Random Effects on Intercept')
@@ -777,10 +765,9 @@ qqnorm(unlist(ranef(fm16.2mer)$subject[,2]), main='Normal Q-Q Plot - Random Effe
 qqline(unlist(ranef(fm16.2mer)$subject[,2]), col='red', lwd=2)
 ```
 
-We observe that the correlation between d_11 and d_22 id very low, 
-we fit a new model with a diagonal D matrix 
+We observe that the correlation between `d_11` and `d_22` id very low, we fit a new model with a diagonal D matrix
 
-Model 2.2: diagonal D
+#### Model 2.2: diagonal D
 
 ```{r }
 fm16.2dmer <- lmer(visual ~ visual0 + time * treat.f + (1|subject) + (0 + time|subject),
@@ -790,9 +777,9 @@ fm16.2dmer <- lmer(visual ~ visual0 + time * treat.f + (1|subject) + (0 + time|s
 summary(fm16.2dmer)
 confint(fm16.2dmer,oldNames=TRUE)
 
-vcovb <- vcov(fm16.2dmer) 
+vcovb <- vcov(fm16.2dmer)
 vcovb
-corb <- cov2cor(vcovb) 
+corb <- cov2cor(vcovb)
 nms <- abbreviate(names(fixef(fm16.2dmer)), 5)
 rownames(corb) <- nms
 corb
@@ -820,8 +807,7 @@ SigmaErr = sgma^2 * (I.n)
 SigmaErr[3:6, 3:6]  # visualization of individual 2
 ```
 
-Conditioned to the random effects b_i, we observe the var-cov of the errors
-that are independent and homoscedastic
+Conditioned to the random effects b_i, we observe the var-cov of the errors that are independent and homoscedastic
 
 ```{r }
 plot(as.matrix(SigmaErr[1:20,1:20]), main = 'Conditional estimated Var-Cov matrix of Y')
@@ -840,17 +826,16 @@ visualization of the first 20 rows/columns
 plot(as.matrix(V[1:20,1:20]), main = 'Marginal estimated Var-Cov matrix of Y')
 ```
 
-PVRE
---------------------
-In this case the variance of random sigma2_R effects represents the mean random 
-effect variance of the model and is given by
-sigma2_b = Var(b0,b1) = sigma2_b0 + 0 + sigma2_b1*mean(z^2)
+##### PVRE
+
+In this case the variance of random sigma2_R effects represents the mean random effect variance of the model and is given by
+`sigma2_b = Var(b0,b1) = sigma2_b0 + 0 + sigma2_b1*mean(z^2)`
 See equation (10) in Johnson (2014), Methods in Ecology and Evolution, 5(9), 944-946.
 
 ```{r }
 sigma2_eps <- as.numeric(get_variance_residual(fm16.2dmer))
 sigma2_eps
-sigma2_b <- as.numeric(get_variance_random(fm16.2dmer)) + mean(armd$time^2)*as.numeric(get_variance_slope(fm16.2dmer)) # 54.07117 + 0.07935904*mean(armd$time^2) 
+sigma2_b <- as.numeric(get_variance_random(fm16.2dmer)) + mean(armd$time^2)*as.numeric(get_variance_slope(fm16.2dmer)) # 54.07117 + 0.07935904*mean(armd$time^2)
 sigma2_b
 
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
@@ -858,32 +843,33 @@ PVRE # 72% is very high!
 ```
 
 visualization of the random intercepts with their 95% confidence intervals
+
 Random effects: b_0i, b_1i for i=1,...,234
 
 ```{r }
 dotplot(ranef(fm16.2mer, condVar=T))
 ```
 
-Comparing models
-------------------
-The anova function, when given two or more arguments representing fitted models,
-produces likelihood ratio tests comparing the models.
+##### Comparing models
+
+The anova function, when given two or more arguments representing fitted models, produces likelihood ratio tests comparing the models.
 
 ```{r }
 anova(fm16.2mer, fm16.2dmer)
 ```
 
-The p-value for the test is essentially zero -> we prefer fm16.2dmer
+The p-value for the test is essentially zero -> we prefer `fm16.2dmer`
 
-LINEAR MIXED MODELS WITH HETEROSCEDASTIC RESIDUALS
-nlme package --> lme() function
+## LINEAR MIXED MODELS WITH HETEROSCEDASTIC RESIDUALS
 
+`nlme` package --> `lme()` function
 
-Model 1. Random intercept, heteroscedastic residuals (varPower of time)
-fixed-effects formula
+### Model 1. Random intercept, heteroscedastic residuals (varPower of time)
+
+Fixed-effects formula
 
 ```{r }
-lm2.form <- formula(visual ~ visual0 + time + treat.f + treat.f:time ) 
+lm2.form <- formula(visual ~ visual0 + time + treat.f + treat.f:time )
 ```
 
 LMM with homoscedastic residuals
@@ -896,15 +882,15 @@ update fm16.1 including heteroscedastic residuals
 
 ```{r }
 fm16.2 <- update(fm16.1,
-                 weights = varPower(form = ~ time), 
+                 weights = varPower(form = ~ time),
                  data = armd)
 
 summary(fm16.2)
 
-VarCorr(fm16.2)  
+VarCorr(fm16.2)
 ```
 
-var-cov matrix of the errors (i.e. of Y, conditional to the random effects), that are independent but heteroscedastic 
+var-cov matrix of the errors (i.e. of Y, conditional to the random effects), that are independent but heteroscedastic
 
 ```{r }
 fm16.2ccov = getVarCov(fm16.2, type = "conditional",  individual = "2")
@@ -921,15 +907,14 @@ fm16.2cov # (90.479 = 31.103 + 59.37555; 121.440 = 62.062 + 59.37555; ...)
 plot(as.matrix(fm16.2cov[[1]]), main = expression(paste('Marginal estimated Var-Cov matrix of ', Y[2])))
 ```
 
-var-cov matrix of y_i is the same for each subject i, 
-except for the number of observations, ranging from 1 to 4
-correlation matrix of Y_i
+var-cov matrix of y_i is the same for each subject i, except for the number of observations, ranging from 1 to 4 correlation matrix of Y_i
 
 ```{r }
 cov2cor(fm16.2cov[[1]])
 ```
 
-ANALYSIS OF RESIDUALS
+#### Residual Analysis
+
 Default residual plot of conditional Pearson residuals
 
 ```{r }
@@ -941,23 +926,25 @@ Plots (and boxplots) of Pearson residuals per time and treatment
 ```{r }
 plot(fm16.2, resid(., type = "pearson") ~ time | treat.f,
      id = 0.05)
-bwplot(resid(fm16.2, type = "p") ~ time.f | treat.f, 
+bwplot(resid(fm16.2, type = "p") ~ time.f | treat.f,
        panel = panel.bwplot, # User-defined panel (not shown)
        data = armd)
 ```
 
 Despite standardization, the variability of the residuals seems to vary a bit.
-Normal Q-Q plots of Pearson residuals 
+
+Normal Q-Q plots of Pearson residuals
 
 ```{r }
-qqnorm(fm16.2, ~resid(.) | time.f) 
+qqnorm(fm16.2, ~resid(.) | time.f)
 ```
 
-ANALYSIS OF RANDOM EFFECTS
+#### Random Effect Analysis
+
 Normal Q-Q plots of predicted random effects
 
 ```{r }
-qqnorm(fm16.2, ~ranef(.))  
+qqnorm(fm16.2, ~ranef(.))
 ```
 
 Computing predictions comparing population average predictions with patient-specific predictions
@@ -971,8 +958,7 @@ aug.Pred <- augPred(fm16.2,
 plot(aug.Pred, layout = c(4, 4, 1))
 ```
 
-
-Model 2.1. random intercept + slope (correlated), heteroscedastic residuals (varPower of time)
+### Model 2.1. random intercept + slope (correlated), heteroscedastic residuals (varPower of time)
 
 ```{r }
 fm16.3 <- update(fm16.2,
@@ -985,13 +971,12 @@ getVarCov(fm16.3, individual = "2")  # D_i italic (i=2)
 intervals(fm16.3, which = "var-cov")  # Estimate of theta_D, delta e sigma
 ```
 
-
-Model 2.2. random intercept + slope independent, heteroscedastic residuals (varPower of time)
+### Model 2.2. random intercept + slope independent, heteroscedastic residuals (varPower of time)
 
 ```{r }
 fm16.4 <- update(fm16.3,
                  random = list(subject = pdDiag(~time)), # Diagonal D
-                 data = armd) 
+                 data = armd)
 summary(fm16.4) # results suggest to remove the Treat and Time interaction
 
 intervals(fm16.4)
@@ -1002,7 +987,7 @@ qqnorm(fm16.4, ~ranef(.)) # to be interpreted with caution since it might not re
 
 plot(fm16.4, resid(., type = "pearson") ~ time | treat.f,
      id = 0.05)
-bwplot(resid(fm16.4, type = "p") ~ time.f | treat.f, 
+bwplot(resid(fm16.4, type = "p") ~ time.f | treat.f,
        panel = panel.bwplot, # User-defined panel (not shown)
        data = armd)
 ```
@@ -1015,10 +1000,10 @@ aug.Pred <- augPred(fm16.4,
                     level = 0:1, # Marginal(0) and subj.-spec.(1)
                     length.out = 2) # Evaluated in two time instants (4 e 52 wks)
 
-plot(aug.Pred, layout = c(4, 4, 1), columns = 2) 
+plot(aug.Pred, layout = c(4, 4, 1), columns = 2)
 ```
 
-let's compare the 4 fitted models 
+let's compare the 4 fitted models
 
 ```{r }
 AIC(fm16.1,fm16.2,fm16.3, fm16.4)
@@ -1026,44 +1011,24 @@ anova(fm16.1,fm16.2,fm16.3, fm16.4)
 ```
 
 
- Applied Statistics 2021/2022
- Linear Mixed-effects models
-
-
- Students and Schools example
-
+## Students and Schools example
 
 ```{r }
 rm(list=ls())
-graphics.off()
-```
 
-Topics:
-  - Linear Mixed Models with Random Intercept
-  - Linear Mixed Models with Random Intercept + Random Slope
-  - Inference
-  - Assessing Assumptions
-  - Prediction
-
-```{r }
 library(ggplot2)
 library(insight)
 library(lattice)
 library(lme4)
-
-
-rm(list=ls())
-graphics.off()
 ```
 
 Dataset school - Student achievement
-We have data from 1000 pupils who attend 50 different primary schools. 
-Students are tested in mathematics at grade 5 with a standardized test across schools. 
-The response variable is the achievement test score (numeric). 
-We have two explanatory variables at the student level: 
-  - pupil gender (1 = male, 0 = female)
-  - a scale centered in 0 for pupil socioeconomic status, pupil escs.
-Moreover, we know the anonymous school identification number. 
+We have data from 1000 pupils who attend 50 different primary schools. Students are tested in mathematics at grade 5 with a standardized test across schools. The response variable is the achievement test score (numeric). We have two explanatory variables at the student level:
+
+ - pupil gender (1 = male, 0 = female)
+ - a scale centered in 0 for pupil socioeconomic status, pupil escs.
+
+Moreover, we know the anonymous school identification number.
 
 ```{r }
 school= read.table(here::here('markdowns','lab_12_data','school.txt'), header=T)
@@ -1073,10 +1038,8 @@ head(school)
 str(school)
 ```
 
-We look at achievement scores for students. 
-The source of dependency is due to students attending the same primary school.
-For our mixed model we'll look at the effects for gender and socioeconomic status (escs) on scholastic achievement,
-taking into account the source of dependency given to the hierarchical structure. 
+We look at achievement scores for students.
+The source of dependency is due to students attending the same primary school. For our mixed model we'll look at the effects for gender and socioeconomic status (escs) on scholastic achievement, taking into account the source of dependency given to the hierarchical structure.
 
 ```{r }
 summary(school)
@@ -1096,19 +1059,22 @@ ggplot(data=school, aes(x=as.factor(school_id), y=achiev, fill=as.factor(school_
         legend.position = 'none')
 ```
 
---------------
-Linear Model
---------------
+### Linear Model
+
 We start with a standard linear regression model, neglecting the dependence structure
-MODEL: achiev_i = beta_0 + beta_1*gender_i+ beta_2*escs_i + eps_i
-eps_i ~ N(0, sigma2_eps)
+
+$$
+\texttt{achiev}_i = \beta_0 + \beta_1\cdot\texttt{gender}_i+ \beta_2\cdot\texttt{escs}_i + \varepsilon_i
+\qquad
+\varepsilon_i \sim N(0, \sigma^2_\varepsilon)
+$$
 
 ```{r }
-lm1 = lm(achiev ~ gender + escs, data = school)
+lm1 <- lm(achiev ~ gender + escs, data = school)
 summary(lm1)
 
 plot(school$escs,school$achiev, col='blue')
-abline(9.91880,1.86976, col='green', lw=4)          # females
+abline(9.91880,1.86976, col='green', lw=4)            # females
 abline(9.91880 -0.68298,1.86976, col='orange', lw=4)  # males
 
 plot(lm1$residuals)
@@ -1116,43 +1082,43 @@ plot(lm1$residuals)
 boxplot(lm1$residuals ~ school$school_id, col='orange', xlab='School ID', ylab='Residuals')
 ```
 
-residuals differ a lot across schools
------------------------------
-Linear Mixed Effects Models
------------------------------
-We now take into account the clustering at primary school --> dependency among students within the same school
-MODEL: achiev_ij = beta_0 + beta_1*gender_ij + beta_2*escs_ij + b_i + eps_ij
-eps_ij ~ N(0, sigma2_eps)
-b_i ~ N(0, sigma2_b)
+Residuals differ a lot across schools
 
+### LMM: Random Intercept
+
+We now take into account the clustering at primary school --> dependency among students within the same school
+
+$$
+\texttt{achiev}_{ij} = \beta_0 + \beta_1\cdot\texttt{gender}_{ij} + \beta_2\cdot\texttt{escs}_{ij} + b_{0i} + \varepsilon_{ij}
+\quad 
+\varepsilon_{ij} \sim N(0, \sigma^2_\varepsilon)
+\quad
+b_i \sim N(0, \sigma^2_b)
+$$
 ```{r }
-lmm1 = lmer(achiev ~ gender + escs + (1|school_id), 
+lmm1 = lmer(achiev ~ gender + escs + (1|school_id),
                       data = school)
 summary(lmm1)
 ```
 
-Fixed Effects and 95% CIs
--------------------------------
+### Fixed Effects and 95% CIs
 
 ```{r }
 confint(lmm1, oldNames=TRUE)
 fixef(lmm1)
 ```
 
-The fixed effects tell us there is a negative effect of being male on achievement, 
-and on average, students with higher escs are associated to higher achievement scores.
-Variance components
---------------------
-One thing that's new compared to the standard regression output is the estimated 
-variance/standard deviation of the school effect.
-This tells us how much, on average, achievement bounces around as we move from school to school. 
-In other words, even after making a prediction based on student covariates, each school has its
-own unique deviation, and that value (in terms of the standard deviation) is the estimated 
-average deviation across schools. 
+The fixed effects tell us there is a negative effect of being male on achievement, and on average, students with higher escs are associated to higher achievement scores.
+
+### Variance components
+
+One thing that's new compared to the standard regression output is the estimated variance/standard deviation of the school effect.
+This tells us how much, on average, achievement bounces around as we move from school to school.
+In other words, even after making a prediction based on student covariates, each school has its own unique deviation, and that value (in terms of the standard deviation) is the estimated average deviation across schools.
 
 ```{r }
 print(vc <- VarCorr(lmm1), comp = c("Variance", "Std.Dev."))
-help(get_variance)
+# help(get_variance)
 
 sigma2_eps <- as.numeric(get_variance_residual(lmm1))
 sigma2_eps
@@ -1160,10 +1126,8 @@ sigma2_b <- as.numeric(get_variance_random(lmm1))
 sigma2_b
 ```
 
-Another way to interpret the variance output is to note percentage of the student variance out 
-of the total, i.e. the Percentage of Variance explained by the Random Effect (PVRE).
-This is also called the intraclass correlation (ICC), because it is also an estimate of the within 
-cluster correlation.
+Another way to interpret the variance output is to note percentage of the student variance out of the total, i.e. the Percentage of Variance explained by the Random Effect (PVRE).
+This is also called the intraclass correlation (ICC), because it is also an estimate of the within cluster correlation.
 
 ```{r }
 PVRE <- sigma2_b/(sigma2_b+sigma2_eps)
@@ -1171,21 +1135,21 @@ PVRE
 ```
 
 PVRE = 41.8% is very high!
-Random effects: b_0i
-----------------------------
+
+### Random effects: b_0i
 
 ```{r }
-ranef(lmm1)
+ranef(lmm1) # estimate of the intercept shift for every school id
+mean(as.numeric(as.matrix(ranef(lmm1)$school_id["(Intercept)"]))) # mean 0 as expected
 ```
 
-The dotplot shows the point and interval estimates for the random effects, 
-ordering them and highlighting which are significantly different from the mean (0)
+The dotplot shows the point and interval estimates for the random effects, ordering them and highlighting which are significantly different from the mean (0)
 
 ```{r }
 dotplot(ranef(lmm1))
 ```
 
-Random intercepts and fixed slopes: (beta_0+b_0i, beta_1, beta_2)
+Random intercepts and fixed slopes: `(beta_0+b_0i, beta_1, beta_2)`
 
 ```{r }
 coef(lmm1)
@@ -1217,53 +1181,54 @@ legend(30, 2.35, legend=expression(paste('Fixed slope ',beta[2])), lwd=2, lty=2,
 ```
 
 Let's plot all the regression lines
-FEMALES
 
 ```{r }
+# FEMALES
+
 par(mfrow=c(1,2))
 plot(school$escs[school$gender==0], school$achiev[school$gender==0],col='blue',
      xlab='escs', ylab='achievement',ylim=c(-5,30),main='Data and regression lines for females')
-abline(10.02507,1.96618, col='red', lw=6)          
+abline(10.02507,1.96618, col='red', lw=6)
 
 for(i in 1:50){
   abline(coef(lmm1)$school_id[i,1], coef(lmm1)$school_id[i,3])
 }
-```
 
-MALES
+# MALES
 
-```{r }
 plot(school$escs[school$gender==1], school$achiev[school$gender==1],col='blue',
      xlab='escs', ylab='achievement',ylim=c(-5,30),main='Data and regression lines for males')
-abline(10.02507-0.91180,1.96618, col='red', lw=6)  
+abline(10.02507-0.91180,1.96618, col='red', lw=6)
 
 for(i in 1:50){
   abline(coef(lmm1)$school_id[i,1] + coef(lmm1)$school_id[i,2], coef(lmm1)$school_id[i,3])
 }
 ```
 
-Diagnostic plots 
-------------------
-1) Assessing Assumption on the within-group errors
+### Diagnostic plots
+
+1. Assessing Assumption on the within-group errors
 
 ```{r }
 plot(lmm1)
 
+par(mfrow=c(1,1))
 qqnorm(resid(lmm1))
 qqline(resid(lmm1), col='red', lwd=2)
 ```
 
-2) Assessing Assumption on the Random Effects
+2. Assessing Assumption on the Random Effects
 
 ```{r }
 qqnorm(unlist(ranef(lmm1)$school_id), main='Normal Q-Q Plot - Random Effects for Primary School')
 qqline(unlist(ranef(lmm1)$school_id), col='red', lwd=2)
 ```
 
-Prediction
--------------
+### Prediction
+
 Let's now examine standard predictions vs. cluster-specific predictions.
 As with most R models, we can use the predict function on the model object.
+
 Prediction from regression model
 
 ```{r }
@@ -1272,27 +1237,34 @@ head(predict_lm)
 ```
 
 Prediction from mixed model:
-1) Without random effects ->  re.form=NA
+
+1. Without random effects -> `re.form=NA`
 
 ```{r }
 predict_no_re <- predict(lmm1, re.form=NA)
 head(predict_no_re) # same predictions
 ```
 
-2) With random effects
+2. With random effects
 
 ```{r }
 predict_re <- predict(lmm1)     # --> remember to allow new levels in the RE if any
 head(predict_re)
 ```
 
-Scenario Analysis
-Let's imagine to observe three new students with the same personal characteristics but enrolled in different schools,
-two of them are observed and one is new
+### Scenario Analysis
+
+Let's imagine to observe three new students with the same personal characteristics but enrolled in different schools, two of them are observed and one is new
 
 ```{r }
-new_student1 = data.frame(gender=as.factor(1), escs=0.7, school_id=32) # observed school
-new_student2 = data.frame(gender=as.factor(1), escs=0.7, school_id=11) # observed school
+
+["(Intercept)"]
+
+which(as.matrix(ranef(lmm1)$school_id) < -1.5*sqrt(sigma2_b))
+which(as.matrix(ranef(lmm1)$school_id) >  1.5*sqrt(sigma2_b))
+
+new_student1 = data.frame(gender=as.factor(1), escs=0.7, school_id=7) # observed school
+new_student2 = data.frame(gender=as.factor(1), escs=0.7, school_id=33) # observed school
 new_student3= data.frame(gender=as.factor(1), escs=0.7, school_id=53) # new school
 
 predict(lmm1, new_student1, re.form=NA)
@@ -1305,42 +1277,41 @@ predict(lmm1, new_student3, re.form=NA)
 predict(lmm1, new_student3, allow.new.levels = T)
 ```
 
---------------------------------------------------
-Linear Mixed Model with Random Intercept & Slope 
---------------------------------------------------
-
-```{r }
-graphics.off()
-```
+### Linear Mixed Model with Random Intercept & Slope
 
 We now consider the possibility that the association between escs and student achievements differs across schools.
-We include a random slope for the escs to model this additional source of heterogeneity. 
-MODEL:  achiev_ij = beta_0 + b_0i + (beta_1 + b_1i)*escs_i + eps_i --> homoscedastic residuals 
-eps_i ~ N(0, sigma2_eps)
-Random effects: b_i ~ N(0, Sigma)
-To allow both the intercept, represented by 1, and the slope, represented by escs,
-to vary by student we can add the term:
-  - (1+escs|school_id)
-or, in alternative, without 1
+We include a random slope for the escs to model this additional source of heterogeneity.
+$$
+\texttt{achiev}_{ij} = \beta_0 + b_{0i} + (\beta_1 + b_{1i})\cdot\texttt{escs}_{ij} + \varepsilon_{ij}
+\quad
+\varepsilon_{ij} \sim N(0, \sigma^2_\varepsilon)
+\quad
+b_i \sim N(0, \Sigma)
+$$
+
+Homoscedastic residuals
+
+Random effects. To allow both the intercept, represented by 1, and the slope, represented by escs, to vary by student we can add the term:
+
+  - (1+escs|school_id) or, in alternative, without 1
   - (escs|school_id)
 
 ```{r }
-lmm2 = lmer(achiev ~ gender + escs + (1 + escs|school_id), 
+lmm2 = lmer(achiev ~ gender + escs + (1 + escs|school_id),
                 data = school)
 summary(lmm2)
 
 confint(lmm2, oldNames=TRUE)
 ```
 
-Note that the mean slope for the escs effect, our fixed effect, is 1.84, but 
-from school to school it bounces around. 
-Yet another point of interest is the correlation of the intercepts and slopes. In this case it's 0.16. 
-That's pretty small, but the interpretation is the same as with any correlation. 
-Variance components
---------------------
-In this case the variance of random sigma2_R effects represents the mean random 
-effect variance of the model and is given by
-sigma2_b = Var(b0,b1) = sigma2_b0 + 2Cov(b0,b1)*mean(w) + sigma2_b1*mean(w^2)
+Note that the mean slope for the escs effect, our fixed effect, is 1.84, but from school to school it bounces around.
+Yet another point of interest is the correlation of the intercepts and slopes. In this case it's 0.16.
+That's pretty small, but the interpretation is the same as with any correlation.
+
+### Variance components
+
+In this case the variance of random sigma2_R effects represents the mean random effect variance of the model and is given by
+`sigma2_b = Var(b0,b1) = sigma2_b0 + 2Cov(b0,b1)*mean(w) + sigma2_b1*mean(w^2)`.
 See equation (10) in Johnson (2014), Methods in Ecology and Evolution, 5(9), 944-946.
 
 ```{r }
@@ -1351,7 +1322,7 @@ sigma2_eps
 sigma2_b <- as.numeric(get_variance_random(lmm2))  # it automatically computes Var(b0,b1)
 ```
 
-4.3228 + 2*0.164*2.0791*1.6451* mean(school$escs, na.rm=T) + 2.7063*mean(school$escs^2, na.rm=T)
+`4.3228 + 2*0.164*2.0791*1.6451* mean(school$escs, na.rm=T) + 2.7063*mean(school$escs^2, na.rm=T)`
 
 ```{r }
 sigma2_b
@@ -1361,8 +1332,9 @@ PVRE
 ```
 
 PVRE = 56%
-Estimates of fixed and random effects
---------------------------------------
+
+### Estimates of fixed and random effects
+
 Fixed effects: (beta_0, beta_1, beta_2)
 
 ```{r }
@@ -1385,7 +1357,7 @@ coef(lmm2)
 head(coef(lmm2)$school)
 ```
 
-Visualization of random effects 
+Visualization of random effects
 
 ```{r }
 par(mfrow=c(1,3))
@@ -1411,37 +1383,36 @@ abline(h=fixef(lmm2)[3], lty=2, col='red', lwd=2)
 legend(30, 5, legend=expression(paste('Fixed slope ',beta[2])), lwd=2, lty=2, col='red', x.intersp=0.5)
 ```
 
-Lines Visualization
----------------------
+### Lines Visualization
+
 Let's plot all the regression lines
-FEMALES
 
 ```{r }
+# FEMALES
+
 par(mfrow=c(1,2))
 plot(school$escs[school$gender==0], school$achiev[school$gender==0],col='blue',
      xlab='escs', ylab='achievement',ylim=c(-5,30),main='Data and regression lines for females')
-abline(10.0546535,1.6790886, col='red', lw=6)          
+abline(10.0546535,1.6790886, col='red', lw=6)
 
 for(i in 1:50){
   abline(coef(lmm2)$school_id[i,1], coef(lmm2)$school_id[i,3])
 }
-```
 
-MALES
+# MALES
 
-```{r }
 plot(school$escs[school$gender==1], school$achiev[school$gender==1],col='blue',
      xlab='escs', ylab='achievement',ylim=c(-5,30),main='Data and regression lines for males')
-abline(10.02507-0.91180,1.96618, col='red', lw=6)  
+abline(10.02507-0.91180,1.96618, col='red', lw=6)
 
 for(i in 1:50){
   abline(coef(lmm2)$school_id[i,1] + coef(lmm2)$school_id[i,2], coef(lmm2)$school_id[i,3])
 }
 ```
 
-Diagnostic plots 
---------------------
-1) Assessing Assumption on the within-group errors
+### Diagnostic plots
+
+1. Assessing Assumption on the within-group errors
 
 ```{r }
 plot(lmm2)
@@ -1450,7 +1421,7 @@ qqnorm(resid(lmm2))
 qqline(resid(lmm2), col='red', lwd=2)
 ```
 
-2) Assessing Assumption on the Random Effects
+2. Assessing Assumption on the Random Effects
 
 ```{r }
 par(mfrow=c(1,2))
@@ -1459,21 +1430,24 @@ qqline(unlist(ranef(lmm2)$school_id[1]), col='red', lwd=2)
 qqnorm(unlist(ranef(lmm2)$school_id[2]), main='Normal Q-Q Plot - Random Effects on escs')
 qqline(unlist(ranef(lmm2)$school_id[2]), col='red', lwd=2)
 
+par(mfrow=c(1,1))
 plot(unlist(ranef(lmm2)$school_id[2]),unlist(ranef(lmm2)$school_id[1]),
      ylab=expression(paste('Intercept  ', b['0i'])),
      xlab=expression(paste('escs  ', b['1i'])), col='dodgerblue2',
      main='Scatterplot of estimated random effects')
 abline(v=0,h=0)
+
+# or
+plot(ranef(lmm2))
+abline(v=0,h=0)
 ```
 
-Alternative plot(ranef(lmm2))
-Comparing models
-------------------
-The anova function, when given two or more arguments representing fitted models,
-produces likelihood ratio tests comparing the models.
+## Comparing models
+
+The anova function, when given two or more arguments representing fitted models, produces likelihood ratio tests comparing the models.
 
 ```{r }
 anova(lmm1, lmm2)
 ```
 
-The p-value for the test is essentially zero -> we prefer lmm2
+The p-value for the test is essentially zero: we prefer `lmm2`.

@@ -13,8 +13,12 @@ library(lattice)      ## Data management
 library(geoR)         ## Geostatistics
 library(gstat)        ## Geostatistics
 
-v.f <- function(x, ...){100-cov.spatial(x, ...)}
-v.f.est<-function(x,C0, ...){C0-cov.spatial(x, ...)}
+# BLUE TRUE
+#    - se vuoi stimare i coefficienti (GLS)
+#    - not using completely the spacial information (se devi predirre qualcosa di indipendente)
+# BLUE FALSE
+#    - WLS
+#    - se vuoi fare una predizione relativa a quel fenomeno
 
 coordinates(hotels) <- c('x','y') # set the coordinates correctly
 
@@ -26,11 +30,13 @@ bubble(hotels,'price',do.log=TRUE,key.space='bottom')
 
 hist(hotels$price, breaks=16, col="grey", main='Histogram of price', prob = TRUE, xlab = 'Zn')
 # highly skewed, transform to the log
-#hist(log(hotels$price), breaks=16, col="grey", main='Histogram of log(Zn)', prob = TRUE, xlab = 'log(Zn)')
+# hist(log(hotels$price), breaks=16, col="grey", main='Histogram of log(Zn)', prob = TRUE, xlab = 'log(Zn)')
 
 # scatterplot of log(zinc) with respect to distance from the river 
 xyplot(price ~ distance, as.data.frame(hotels))
 
+# how to assume isotropy
+plot(variogram(log(sights) ~ 1 + log.chlorofill, data=data, alpha = c(0, 45, 90, 135)),pch=19)
 
 v.t=variogram(price ~ winter + winter:distance , data=hotels)
 plot(v.t,pch=19)
@@ -47,7 +53,12 @@ vgm()
 
 # sample variogram (binned estimator) + plot
 v.no=variogram(price ~ 1 , data=hotels)
-v.fit1 <- fit.variogram(v.no, vgm(4000, "Sph", 500,500))    ###vgm(sill, 'type', range, nugget)
+v.fit1 <- fit.variogram(v.no, vgm(4000, "Sph", 500,500))
+		#vgm(sill, the value it approaches
+		#	'type', Exp or Sph
+		#	range, where is the elbow
+		#	nugget jump at the origin, possibly omitted
+		#	)
 plot(v.no, v.fit1, pch = 3)
 v.fit1
 
@@ -80,27 +91,6 @@ a0 = w1 - a1*s1$distance
 paramno = c(a0,a1)
 
 
-##### PREDICTION FOR GROUP 2
-
-s1=hotels[3,]
-
-w1= predict(g.t, s1,BLUE = TRUE)$var1.pred
-
-s2=hotels[5,]
-
-w2= predict(g.t, s2,BLUE = TRUE)$var1.pred
-
-a1 = (w2-w1)/(s2$distance - s1$distance)
-a0 = w1 - a1*s1$distance
-
-paramyes = c(a0,a1)
-
-
-D.s0=sqrt((342399.74-342362.58)^2 +(5072272.75 -5072518.24)^2)
-
-pop = predict(fitlm, data.frame(distance = D.s0), ) 
-
-## 6132
 
 datum=as.data.frame(t(matrix(c(342399.74,5072272.75,D.s0))))
 names(datum)=c('x','y','distance')

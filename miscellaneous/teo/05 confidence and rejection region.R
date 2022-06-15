@@ -12,7 +12,6 @@ dim(stiff)
 n <- dim(stiff)[1]
 p <- dim(stiff)[2]
 
-x11()
 plot(stiff,pch=19)
 
 dev.off()
@@ -67,14 +66,14 @@ r <- sqrt(cfr.fisher)
 r*sqrt(eigen(x.cov/n)$values) 
 
 #ellipse
-x11()
 plot(stiff,pch=19)
 ellipse(x.mean, x.cov/n, sqrt(cfr.fisher), col = 'red', lty = 2, lwd=2, center.cex=1)
+points(x.mean[1], x.mean[2], pch = 16, col ='red', cex = 1.5)
 
 # Region of rejection (centered in mu0)
-x11()
 plot(stiff,pch=19)
 ellipse(mu0, shape=x.cov/n, sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 16)
+points(x.mean[1], x.mean[2], pch = 16, col ='red', cex = 1.5)
 
 # Remark: the radius and the shape of the ellipse are the same, but the center changes:
 # - Rejection region: the center is the mean mu0 under H0 (blue ellipse)
@@ -125,7 +124,6 @@ r <- sqrt(cfr.fisher)
 # Length of the semi-axes of the ellipse:
 r*sqrt(eigen(Sp*(1/n1+1/n2))$values)  
 
-x11()
 plot(m1[1]-m2[1], m1[2]-m2[2], asp = 1, xlim = c(8,13))
 ellipse(m1 - m2, shape=Sp*(1/n1+1/n2), sqrt(cfr.fisher), col = 'blue', lty = 2, center.pch = 20)  
 
@@ -152,7 +150,6 @@ Bf
 
 ###
 # Let's do a plot
-x11()
 matplot(1:4,1:4,pch='',ylim=range(stiff),xlab='Variables',ylab='Confidence intervals along a component',main='Confidence intervals')
 
 for(i in 1:4) segments(i,T2[i,1],i,T2[i,3],lwd=2,col='grey35', lty=3)
@@ -172,3 +169,6 @@ points(1:4, mu0, lwd=3, col='orange')
 
 
 
+# Estimate an elliptical region A that contains 99% of the pines
+# Ellipse(mean,S,r)
+# And not S/n as you do to find the elliptical confidence region for the mean
