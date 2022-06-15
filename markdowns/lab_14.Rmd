@@ -1,5 +1,7 @@
 ---
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 editor_options:
   chunk_output_type: console
 ---
@@ -800,17 +802,16 @@ install_version("fdakma", version = "1.2.1", repos = "http://cran.r-project.org"
 ```
 
 ```{r }
+rm(list=ls())
 library(fdakma)
-help(kma)
-
-help(kma.data)
-
 data(kma.data)
+
+d <- kma.data
 names(kma.data)
 
-x <- kma.data$x   # abscissas
-y0 <- kma.data$y0 # evaluations of original functions
-y1 <- kma.data$y1 # evaluations of original functions' first derivatives
+x <- d$x   # abscissas
+y0 <- d$y0 # evaluations of original functions
+y1 <- d$y1 # evaluations of original functions' first derivatives
 ```
 
 Plot of original functions
@@ -922,8 +923,6 @@ for(i in 1:30)(
 How to choose the number of clusters and the warping method
 
 ```{r warning=FALSE}
-help(kma.compare)
-
 kma.compare_example <- kma.compare (
   x=x, y0=y0, y1=y1, n.clust=1:3,
   warping.method=c('affine'),
@@ -962,8 +961,6 @@ library(fda)
 Daily temperatures recorded in 35 weather stations of Canada (data are averages over 35 years - 1960 to 1994)
 
 ```{r }
-help(CanadianWeather)
-
 data_W <- CanadianWeather$dailyAv[, ,1]
 head(data_W)
 dim(data_W)
@@ -1042,8 +1039,6 @@ image.plot(time, time, (cov(t(eval.3))[1:365, ]))
 51 measurements of the position of the lower lip every 7 milliseconds for 20 repetitions of the syllable 'bob'.
 
 ```{r }
-help(lip)
-
 data_L <- lip
 length(data_L)
 
