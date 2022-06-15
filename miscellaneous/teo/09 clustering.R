@@ -6,7 +6,7 @@ library(mvtnorm)
 library(rgl)
 library(car)
 
-n <- dim(data)[1] # number of samples
+n <- nrow(data) # number of samples
 misc <- sample(n) # random permutation
 
 # d = distance
