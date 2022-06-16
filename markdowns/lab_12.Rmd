@@ -1258,8 +1258,6 @@ Let's imagine to observe three new students with the same personal characteristi
 
 ```{r }
 
-["(Intercept)"]
-
 which(as.matrix(ranef(lmm1)$school_id) < -1.5*sqrt(sigma2_b))
 which(as.matrix(ranef(lmm1)$school_id) >  1.5*sqrt(sigma2_b))
 
@@ -1415,8 +1413,13 @@ for(i in 1:50){
 1. Assessing Assumption on the within-group errors
 
 ```{r }
+par(mfrow=c(1,1))
 plot(lmm2)
+```
 
+
+```{r }
+par(mfrow=c(1,1))
 qqnorm(resid(lmm2))
 qqline(resid(lmm2), col='red', lwd=2)
 ```
@@ -1424,6 +1427,7 @@ qqline(resid(lmm2), col='red', lwd=2)
 2. Assessing Assumption on the Random Effects
 
 ```{r }
+graphics.off()
 par(mfrow=c(1,2))
 qqnorm(unlist(ranef(lmm2)$school_id[1]), main='Normal Q-Q Plot - Random Effects on Intercept')
 qqline(unlist(ranef(lmm2)$school_id[1]), col='red', lwd=2)
