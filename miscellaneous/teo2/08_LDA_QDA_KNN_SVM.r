@@ -25,11 +25,8 @@ n <- n1+n2+n3
 
 # plot the data
 x11()
-plot(iris2, main='Iris Sepal', xlab='Sepal.Length', ylab='Sepal.Width', pch=19)
-points(iris2[i1,], col='red', pch=19)
-points(iris2[i2,], col='green', pch=19)
-points(iris2[i3,], col='blue', pch=19)
-legend("topright", legend=levels(species.name), fill=c('red','green','blue'))
+plot(iris2, main='Iris Sepal', xlab='Sepal.Length', ylab='Sepal.Width', pch=19, col=species.name)
+legend("topright", legend=levels(species.name), fill=unique(species.name))
 
 m <-  colMeans(iris2)
 m1 <- colMeans(iris2[i1,])
@@ -193,11 +190,8 @@ contour(x, y, matrix(z2, 200), levels=0, drawlabels=F, add=T)
 k <- 7
 
 x11()
-plot(iris2, main='Plot', xlab='x1', ylab='x2', pch=20)
-points(iris2[i1,], col=2, pch=20)
-points(iris2[i2,], col=3, pch=20)
-points(iris2[i3,], col=4, pch=20)
-legend("topright", legend=levels(species.name), fill=c(2,3,4))
+plot(iris2, main='Plot', xlab='x1', ylab='x2', pch=20, col=species.name)
+legend("topright", legend=levels(species.name), fill=unique(species.name))
 
 x  <- seq(min(iris[,1]), max(iris[,1]), length=200)
 y  <- seq(min(iris[,2]), max(iris[,2]), length=200)
