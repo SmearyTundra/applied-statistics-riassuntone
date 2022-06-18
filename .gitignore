@@ -1,5 +1,5 @@
-.Rproj.user
-.Rhistory
+*.Rproj.user
+*.Rhistory
 .RData
 .Ruserdata
 lab*.pdf
@@ -10,3 +10,4 @@ markdown_mother.log
 markdown_mother.pdf
 markdown_mother.tex
 *cache*
+*.DS_Store
