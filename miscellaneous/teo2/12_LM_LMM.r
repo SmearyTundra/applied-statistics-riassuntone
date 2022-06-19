@@ -11,14 +11,13 @@
 rm(list=ls())
 graphics.off()
 
-
+library(corrplot)
+library(plot.matrix)
 library(ggplot2)
 library(insight)
 library(lattice)
 library(lme4)
 library(nlme)
-library(corrplot)
-library(plot.matrix)
 
 ############# BEFORE STARTING ##############
 # Importing dataset
@@ -45,7 +44,7 @@ ggplot(data=school, aes(x=as.factor(school_id), y=achiev, fill=as.factor(school_
 
 lm1 = lm(achiev ~ gender + escs + school_id, data = school)
 summary(lm1)
-plot(lm1$residuals)
+#plot(lm1$residuals)
 boxplot(lm1$residuals ~ school$school_id, col='orange', xlab='School ID', ylab='Residuals')
 
 # Boxplot residuals according to different group (useful for LMM later)
@@ -73,24 +72,25 @@ fm9.1 <- gls(visual ~ -1 + visual0 + time.f + treat.f:time.f,  # the same as bef
              data = armd)
 summary(fm9.1)
 plot(fm9.1$residuals) 
-fm9.1$modelStruct$varStruct
-intervals(fm9.1, which = "var-cov")  ## 95% CI
+fm9.1$modelStruct$varStruct # variance in different groups
+intervals(fm9.1, which = "var-cov", level = 0.95) # IC for the variance in different groups
+# the first one is assumed to be 1 and the others are scaled on that one
 anova(fm9.1, lm1.form) 
 
 ## OPTION 2 : VarPower()
 fm9.2 <- update(fm9.1, weights = varPower(form = ~time)) # Var. function; <delta, v_it>-group
 summary(fm9.2)
-fm9.2$modelStruct$varStruct
-intervals(fm9.2, which = "var-cov")
+fm9.2$modelStruct$varStruct # variance in different groups
+intervals(fm9.2, which = "var-cov", level = 0.95) # IC for the variance in different groups
 anova(fm9.2, fm9.1)
-
+AIC(fm9.2, fm9.1) # lower is better
 
 ##### with heteroscedastic and dependent errors 
 ## (heteroschedasticity built upon previous section)
 
 ## choose dependence structure using variogram
 
-## Variogram per group (se ho un factor essenziale as.numeric)
+## Variogram per group (se ho un factor essenziale as.numeric al posto di tp)
 Vg2 <- Variogram(fm9.2, form = ~ tp | subject)
 Vg2
 plot(Vg2, smooth = FALSE, xlab = "Time Lag",ylim=c(0,0.7))
@@ -166,7 +166,8 @@ fixef(lmm1)
 
 # Variance components
 #--------------------
-print(vc <- VarCorr(lmm1), comp = c("Variance", "Std.Dev."))
+print(vc <- VarCorr(lmm1), comp = c("Variance", "Std.Dev.")) # variance/std of random components
+# other way to obtain them
 sigma2_eps <- as.numeric(get_variance_residual(lmm1))
 sigma2_eps
 sigma2_b <- as.numeric(get_variance_random(lmm1))
@@ -178,6 +179,9 @@ PVRE # intraclass correlation >20% high
 # Random effects: b_0i
 #----------------------------
 ranef(lmm1)
+mean(as.numeric(as.matrix(ranef(lmm1)$school_id["(Intercept)"]))) # mean 0 as expected
+mean(as.matrix(ranef(lmm1)$school_id)) # same
+mean(unlist(ranef(lmm1)$school_id)) # same
 
 # The dotplot shows the point and interval estimates for the random effects, 
 # ordering them and highlighting which are significantly different from the mean (0)
@@ -219,6 +223,11 @@ predict_re <- predict(lmm1)     ## --> remember to allow new levels in the RE if
 head(predict_re)
 
 ## Scenario Analysis
+
+# find schools farthest from the mean (1.5 std)
+which(as.matrix(ranef(lmm1)$school_id) < -1.5*sqrt(sigma2_b))
+which(as.matrix(ranef(lmm1)$school_id) >  1.5*sqrt(sigma2_b))
+
 new_student1 = data.frame(gender=as.factor(1), escs=0.7, school_id=as.factor(32)) # observed school
 new_student2 = data.frame(gender=as.factor(1), escs=0.7, school_id=as.factor(11)) # observed school
 new_student3 = data.frame(gender=as.factor(1), escs=0.7, school_id=53) # new school
@@ -252,10 +261,10 @@ predict(lmm1, new_student3, allow.new.levels = T) # student going in new school 
 ############ LINEAR MIXED EFFECTS MODELS (with random intercept and slope) ##############
 # Association between y and another regressor varies across groups
 
-# MODEL:  achiev_ij = beta_0 + b_0i + (beta_1 + b_1i)*escs_i + eps_i --> homoscedastic residuals 
+# MODEL:  achiev_ij = beta_0 + b_0i + (beta_1 + b_1i)*escs_i + eps_ij --> homoscedastic residuals 
 # random slope: b_1i*escs_i
 
-# eps_i ~ N(0, sigma2_eps)
+# eps_ij ~ N(0, sigma2_eps)
 # Random effects: b_i ~ N(0, Sigma)
 
 # To allow both the intercept, represented by 1, and the slope, represented by escs,
@@ -321,6 +330,12 @@ qqline(unlist(ranef(lmm2)$school_id[2]), col='red', lwd=2)
 
 x11()
 plot(ranef(lmm2))
+# or if you wanna hurt yourself
+plot(unlist(ranef(lmm2)$school_id[2]),unlist(ranef(lmm2)$school_id[1]),
+     ylab=expression(paste('Intercept  ', b['0i'])),
+     xlab=expression(paste('escs  ', b['1i'])), col='dodgerblue2',
+     main='Scatterplot of estimated random effects')
+abline(v=0,h=0)
 
 anova(lmm1,lmm2)
 

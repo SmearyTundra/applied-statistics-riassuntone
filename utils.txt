@@ -1,2 +1,1 @@
 knitr::spin('LAB_9.R', knit = FALSE)
-remove x11
