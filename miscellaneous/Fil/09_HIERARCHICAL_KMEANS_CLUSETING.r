@@ -15,46 +15,46 @@ library(car)
 
 ############### HIERARCHICAL CLUSTERING ###################
 ###########-------------------------------------------------
-species.name <- iris[,5]
-iris4        <- iris[,1:4]
+species.name <- d[,5]
+d        <- d[,1:4]
 
 
 #### COMPUTING DISTANCE
 ###-------------------
-iris.e <- dist(iris4, method='euclidean')
-iris.m <- dist(iris4, method='manhattan')
-iris.c <- dist(iris4, method='canberra')
+d.e <- dist(d, method='euclidean')
+d.m <- dist(d, method='manhattan')
+d.c <- dist(d, method='canberra')
 
 x11()
 par(mfrow=c(1,3))
-image(1:150,1:150,as.matrix(iris.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.c), main='metrics: Canberra', asp=1, xlab='i', ylab='j' )
-image(1:150,1:150,as.matrix(iris.m), main='metrics: Manhattan', asp=1, xlab='i', ylab='j' )
+image(1:150,1:150,as.matrix(d.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j' )
+image(1:150,1:150,as.matrix(d.c), main='metrics: Canberra', asp=1, xlab='i', ylab='j' )
+image(1:150,1:150,as.matrix(d.m), main='metrics: Manhattan', asp=1, xlab='i', ylab='j' )
 
 # Unorder data
-misc <- sample(150)
-iris4 <- iris4[misc,]
-iris.e <- dist(iris4, method='euclidean')
-iris.m <- dist(iris4, method='manhattan')
-iris.c <- dist(iris4, method='canberra')
+misc <- sample(n)
+d <- d[misc,]
+d.e <- dist(d, method='euclidean')
+d.m <- dist(d, method='manhattan')
+d.c <- dist(d, method='canberra')
 
 
 
 #### CLUSTERING
 ###-------------------
-iris.es <- hclust(iris.e, method='single')
-iris.ea <- hclust(iris.e, method='average')
-iris.ec <- hclust(iris.e, method='complete')
-clustw <- hclust(d, method='ward.D2')
+d.es <- hclust(d.e, method='single')
+d.ea <- hclust(d.e, method='average')
+d.ec <- hclust(d.e, method='complete')
+clustw <- hclust(d.e, method='ward.D2')
 plot(clustw, hang=-0.1, labels=FALSE, main='ward', xlab='', sub='')
 
 
 # if we want more detailed information on euclidean-complete
 # clustering:
-names(iris.ec)
-iris.ec$merge  # order of aggregation of statistical units / clusters
-iris.ec$height # distance at which we have aggregations
-iris.ec$order  # ordering that allows to avoid intersections in the dendrogram
+names(d.ec)
+d.ec$merge  # order of aggregation of statistical units / clusters
+d.ec$height # distance at which we have aggregations
+d.ec$order  # ordering that allows to avoid intersections in the dendrogram
 
 
 
@@ -63,19 +63,19 @@ iris.ec$order  # ordering that allows to avoid intersections in the dendrogram
 ###-------------------
 x11()
 par(mfrow=c(1,3))
-plot(iris.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(iris.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(iris.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+plot(d.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+plot(d.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+plot(d.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 
 # Dendrograms 2 clusters etc
 x11()
 par(mfrow=c(1,3))
-plot(iris.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.es, k=2)
-plot(iris.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ec, k=2)
-plot(iris.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(iris.ea, k=2)
+plot(d.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+rect.hclust(d.es, k=2)
+plot(d.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+rect.hclust(d.ec, k=2)
+plot(d.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
+rect.hclust(d.ea, k=2)
 #### Look also at the scatter plot before deciding where to cut
 
 
@@ -84,9 +84,9 @@ rect.hclust(iris.ea, k=2)
 #### CUTTING
 ###-------------------
 # Fix k=2 clusters:
-cluster.ec <- cutree(iris.ec, k=2) # euclidean-complete:
-cluster.es <- cutree(iris.es, k=2) # euclidean-single
-cluster.ea <- cutree(iris.ea, k=2) # euclidean-average
+cluster.ec <- cutree(d.ec, k=2) # euclidean-complete:
+cluster.es <- cutree(d.es, k=2) # euclidean-single
+cluster.ea <- cutree(d.ea, k=2) # euclidean-average
 
 
 # Interpretation?
@@ -99,14 +99,14 @@ table(label.true = species.name[misc], label.cluster = cluster.ea)
 
 #### COPH COEFFICIENTS
 ###-------------------
-coph.es <- cophenetic(iris.es)
-coph.ec <- cophenetic(iris.ec)
-coph.ea <- cophenetic(iris.ea)
+coph.es <- cophenetic(d.es)
+coph.ec <- cophenetic(d.ec)
+coph.ea <- cophenetic(d.ea)
 
 # compute cophenetic coefficients
-es <- cor(iris.e, coph.es)
-ec <- cor(iris.e, coph.ec)
-ea <- cor(iris.e, coph.ea)
+es <- cor(d.e, coph.es)
+ec <- cor(d.e, coph.ec)
+ea <- cor(d.e, coph.ea)
 
 c("Eucl-Single"=es,"Eucl-Compl."=ec,"Eucl-Ave."=ea)
 
@@ -123,7 +123,7 @@ ng
 N <- sum(ng)
 
 # oppure
-table(clusters.ec)
+table(cluster.ec)
 
 
 
@@ -148,7 +148,7 @@ g <- 3 # number of clusters
 IC={}
 Ps={}
 for(i in 1:g){
-    X <- data[cluster.dl.cut==i,1] # i need only the major axis
+    X <- d[cluster.dl.cut==i,1] # 1 seleziona mean per prima var, 2 per la seconda
     n <- length(X)
     Ps <- c(Ps,shapiro.test(X)$p)
     x.mean   <- mean(X)
@@ -293,3 +293,7 @@ plot(p.pr, asp = 1, col='gold', pch=19, xlim=c(-10,50))
 points(M[1], M[2], pch = 4, cex = 1.5, lwd = 2)
 ellipse(center=M, shape=S, radius=sqrt(cfr.chisq), col = 'black', lty = 2, center.pch = 4)
 points(stones[which(cl.ew==1),])
+
+
+
+

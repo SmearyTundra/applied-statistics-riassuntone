@@ -6,26 +6,26 @@ library(car)
 library(rgl)
 
 
+## Dummify
+d$wd <- ifelse(d$day == 'weekday', 1,0)
+
 ############### LINEAR MODELS #############
 ######------------------------------------
-fm <- lm(distance ~ speed1 + speed2)
-
+fm <- lm(y ~ ., data = d)
 summary(fm) 
-# Note: collinearity
+
+coefficients(fm)  # beta_i
+sum(residuals(fm)^2)/fm$df  # estimate of sigma^2
+
 
 fitted(fm)        # y hat
 residuals(fm)     # eps hat
-
-coefficients(fm)  # beta_i
 vcov(fm)          # cov(beta_i)
-
 fm$rank # order of the model [r+1]
 fm$df   # degrees of freedom of the residuals [n-(r+1)]
-
 hatvalues(fm) # h_ii
 rstandard(fm) # standardized residuals
 
-sum(residuals(fm)^2)/fm$df  # estimate of sigma^2
 
 
 
@@ -34,8 +34,8 @@ sum(residuals(fm)^2)/fm$df  # estimate of sigma^2
 #####-------------------------------------------
 par(mfrow=c(2,2))
 plot(fm)
-
 shapiro.test(residuals(fm))
+vif(fm)
 
 
 

@@ -187,7 +187,7 @@ summary.manova(fit,test="Wilks") # Exact tests for p<=2 or g<=3 already implemen
 summary.aov(fit)
 
 
-#### Bonferroni Confidence intervals on the TAU_i
+#### Bonferroni Confidence intervals on the TAU_i (differences)
 # for each group for each of the p=4 numerical variables
 ###----------------
 alpha <- 0.05
@@ -435,21 +435,36 @@ IC2
 
 
 ######## BONFERRONI CONF. INTERVALS FOR MEANS AND VARIANCE
-fit3 <- aov(weight ~ species, penguins) 
+fit3 <- aov(tempo ~ tipo, data=d)
 summary(fit3)
 
-DF <- fit3$df # n*g*b - 1 - (g-1) = 15*3*2-1-2 = 90-3 = 87
-Spooled <- sum(fit3$res^2)/DF
+# question e)
+# g=3 Groups identified by the levels of the factor TYPE
+# k=4: g*(g-1)/2 comparisons between the means + 1 conf int on the variance 
+n <- dim(d)[1]
+g <- 3
+k <- g+1
+S <- sum(residuals(fit3)^2)/(n-g)
 
-means <- as.vector(tapply(penguins$weight, penguins$species, mean))
-names(means) <- levels(species)
-means
+alpha<- .1
 
-alpha <- 0.10
-k     <- 4 # g + 1 = 4 (g Conf Int for the means and 1 for the variance)
-BF    <- rbind(cbind(means - sqrt(Spooled / 30) * qt(1 - alpha / (2*k), DF), 
-                     means + sqrt(Spooled / 30) * qt(1 - alpha / (2*k), DF)),
-               c(Spooled * DF / qchisq(1 - alpha / (2*k), DF), 
-                 Spooled * DF / qchisq(alpha / (2*k), DF)))
-rownames(BF)[4] <- 'Var.'
-BF
+Mg  <- tapply(d[,1], tipo, mean) 
+
+label <- levels(factor(tipo))
+n1 <- length(d[tipo==label[1],1])
+n2 <- length(d[tipo==label[2],1])
+n3 <- length(d[tipo==label[3],1])
+t <- qt(1-alpha/(2*k),n-g)
+
+# Conf int for the means
+ICB1<-data.frame(L=Mg[1]-sqrt(S*(1/n1))*t,C=Mg[1],U=Mg[1]+sqrt(S/n1)*t)
+ICB2<-data.frame(L=Mg[2]-sqrt(S*(1/n2))*t,C=Mg[2],U=Mg[2]+sqrt(S/n2)*t)
+ICB3<-data.frame(L=Mg[3]-sqrt(S*(1/n3))*t,C=Mg[3],U=Mg[3]+sqrt(S/n3)*t)
+ICB<-data.frame(rbind(ICB1,ICB2,ICB3))
+ICB
+
+# Conf int for variances
+chi_u <- qchisq(alpha/(2*k),n-g)
+chi_l <- qchisq(1-alpha/(2*k),n-g)
+ICBV <- data.frame(L=(n-g)*S/chi_l,C=S,U=(n-g)*S/chi_u)
+ICBV

@@ -210,13 +210,153 @@ points(abscissa,Xsp0bis ,type="l",col="red",lwd=2)
 ########################### SMOOTHING SPLINES WIHT FDPAR and LAMBDA ################################
 #### ----------------------------------------
 # riga 270 FDA_SMOOTHING
+# breaks <- abscissa[((0:50)*2)+1]
+breaks <- abscissa
+
+basis <- create.bspline.basis(breaks, norder=m)
+functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=1e-8)  
+# functional parameter, having arguments: 
+# basis, order of the derivative to be penalized, smoothing parameter.
+
+Xss <- smooth.basis(abscissa, Xobs0, functionalPar)
+
+Xss0 <- eval.fd(abscissa, Xss$fd, Lfd=0)
+Xss1 <- eval.fd(abscissa, Xss$fd, Lfd=1)
+Xss2 <- eval.fd(abscissa, Xss$fd, Lfd=2)
+
+df <- Xss$df   #  the degrees of freedom in the smoothing curve
+df
+gcv <- Xss$gcv  #  the value of the gcv statistic
+gcv
+
+x11()
+par(mfrow=c(1,3))
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xss0 ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX1,xlab="t",ylab="first differences x",type="l")
+points(abscissa,Xss1 ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX2,xlab="t",ylab="second differences x",type="l")
+points(abscissa,Xss2 ,type="l",col="blue",lwd=2)
+
+##### Using cross-validation
+
+lambda <- 10^seq(-12,-5,by = 0.5) # grid
+gcv <- numeric(length(lambda))
+for (i in 1:length(lambda)){
+  functionalPar <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[i])  
+  gcv[i] <- smooth.basis(abscissa, Xobs0, functionalPar)$gcv
+}
+par(mfrow=c(1,1))
+plot(log10(lambda),gcv)
+lambda[which.min(gcv)]
+
+
+# best lambda
+functionalParbest <- fdPar(fdobj=basis, Lfdobj=3, lambda=lambda[which.min(gcv)])  
+
+Xssbest <- smooth.basis(abscissa, Xobs0, functionalParbest)
+
+Xss0best <- eval.fd(abscissa, Xssbest$fd, Lfd=0)
+Xss1best <- eval.fd(abscissa, Xssbest$fd, Lfd=1)
+Xss2best <- eval.fd(abscissa, Xssbest$fd, Lfd=2)
+
+dfbest <- Xssbest$df   #  the degrees of freedom in the smoothing curve
+dfbest
+gcvbest <- Xssbest$gcv  #  the value of the gcv statistic
+gcvbest
+
+
+par(mfrow=c(1,3))
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xss0ter ,type="l",col="red",lwd=1)
+points(abscissa,Xss0bis ,type="l",col="green",lwd=1)
+points(abscissa,Xss0best ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX1,xlab="t",ylab="first differences x",type="l")
+points(abscissa,Xss1ter ,type="l",col="red",lwd=1)
+points(abscissa,Xss1bis ,type="l",col="green",lwd=1)
+points(abscissa,Xss1best ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX2,xlab="t",ylab="second differences x",type="l")
+points(abscissa,Xss2ter ,type="l",col="red",lwd=1)
+points(abscissa,Xss2bis ,type="l",col="green",lwd=1)
+points(abscissa,Xss2best ,type="l",col="blue",lwd=2)
 
 
 
-#### LOCAL POLYNOMIAL REGRESSION ####
+
+
+
+
+
+########################### LOCAL POLY REGRESSION ################################
+#### ----------------------------------------
 #### riga 389 FDA_SMOOTHING
 
+library(KernSmooth)
+
+# Xobs0 era una singola curva
+m <- 5           # order of the polynomial
+degree <- m-1    # degree of the polynomial
 
 
-#### COSTRAINED FUNCTIONS ####
+bw <- 0.05 # bandwidth
+# a too large bandwidth leads to oversmoothing
+# a too small bandwidth leads to undersmoothing
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Recommendation: when choosing the bandwidth, look at the
+# derivatives vs central finite differences
+
+
+
+Xsm0 <- locpoly(abscissa, Xobs0, degree=degree,
+                bandwidth=bw, gridsize=length(abscissa), 
+                range.x=range(abscissa))
+Xsm0 <- Xsm0$y
+
+par(mfrow=c(1,1))
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xsm0 ,type="l",col="blue")
+
+# Estimate of the derivatives
+
+Xsm1 <- locpoly(abscissa,Xobs0,drv=1,degree=degree,bandwidth=bw,
+                gridsize=length(abscissa), range.x=range(abscissa))
+Xsm1 <- Xsm1$y
+
+Xsm2 <- locpoly(abscissa,Xobs0,drv=2,degree=degree,bandwidth=bw,
+                gridsize=length(abscissa), range.x=range(abscissa))
+Xsm2 <- Xsm2$y
+
+
+par(mfrow=c(1,3))
+plot(abscissa,Xobs0,xlab="t",ylab="observed data")
+points(abscissa,Xsm0 ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX1,xlab="t",ylab="first differences x",type="l")
+points(abscissa,Xsm1 ,type="l",col="blue",lwd=2)
+plot(abscissa[2:(NT-1)],rappincX2,xlab="t",ylab="second differences x",type="l")
+points(abscissa,Xsm2 ,type="l",col="blue",lwd=2)
+
+
+
+
+
+
+
+
+
+########################### COSTRAINED FUNCTIONS ################################
+#### ----------------------------------------
 #### riga 493
+
+
+
+
+
+
+
+
+
+
+
+
+
+

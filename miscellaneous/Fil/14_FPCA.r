@@ -49,15 +49,15 @@ pca_W.1 <- pca.fd(data_W.fd.1,nharm=5,centerfns=TRUE)
 # scree plot
 # pca.fd computes all the 365 eigenvalues, but only the first 
 # N-1=34 are non-null
-plot(pca_W.1$values[1:35],xlab='j',ylab='Eigenvalues')
+plot(pca_W.1$values[1:35],xlab='j',ylab='Eigenvalues') ### CHANGE 1:nsplines
 plot(cumsum(pca_W.1$values)[1:35]/sum(pca_W.1$values),xlab='j',ylab='CPV',ylim=c(0.8,1))
 
 # first two FPCs
 x11()
 par(mfrow = c(1,2))
-plot(pca_W.1$harmonics[1,],col=1,ylab='FPC1',ylim=c(-0.1,0.08))
+plot(pca_W.1$harmonics[1,],col=1,ylab='FPC1')
 abline(h=0,lty=2)
-plot(pca_W.1$harmonics[2,],col=2,ylab='FPC2',ylim=c(-0.1,0.08))
+plot(pca_W.1$harmonics[2,],col=2,ylab='FPC2')
 
 # plot of the FPCs as perturbation of the mean
 media <- mean.fd(data_W.fd.1)

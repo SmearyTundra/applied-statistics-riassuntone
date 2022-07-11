@@ -96,8 +96,8 @@ points(iris2[i2,], col='green', pch=20)
 legend("topright", legend=levels(species.name), fill=c('red','green'), cex=.7)
 
 points(lda.iris$means, pch=4,col=c('red','green') , lwd=2, cex=1.5)
-x  <- seq(min(iris[,1]), max(iris[,1]), length=200)
-y  <- seq(min(iris[,2]), max(iris[,2]), length=200)
+x  <- seq(min(iris2[,1]), max(iris2[,1]), length=200)
+y  <- seq(min(iris2[,2]), max(iris2[,2]), length=200)
 xy <- expand.grid(Sepal.Length=x, Sepal.Width=y)
 
 z  <- predict(lda.iris, xy)$post  # these are P_i*f_i(x,y)  
@@ -199,14 +199,115 @@ points(iris2[i2,], col=3, pch=20)
 points(iris2[i3,], col=4, pch=20)
 legend("topright", legend=levels(species.name), fill=c(2,3,4))
 
-x  <- seq(min(iris[,1]), max(iris[,1]), length=200)
-y  <- seq(min(iris[,2]), max(iris[,2]), length=200)
+x  <- seq(min(iris2[,1]), max(iris2[,1]), length=200)
+y  <- seq(min(iris2[,2]), max(iris2[,2]), length=200)
 xy <- expand.grid(Sepal.Length=x, Sepal.Width=y) ### CHANGE THIS
 
-iris.knn <- knn(train = iris2, test = xy, cl = iris$Species, k = k)
+iris.knn <- knn(train = iris2, test = xy, cl = species.name, k = k)
 z  <- as.numeric(iris.knn)
 contour(x, y, matrix(z, 200), levels=c(1.5, 2.5), drawlabels=F, add=T)
 
+
+{#Knn con k fissato
+  k #da definire
+  x <- seq(min(data[,1]), max(data[,1]), length=400)
+  y <- seq(min(data[,2]), max(data[,2]), length=400)
+  xy <- expand.grid(x,y)
+  knn_data = knn(train = data[,1:2], test =xy , cl = data$gruppo , k = k , prob = T)
+  
+  attr = attributes(knn_data) # mi da levels,class e prob
+  
+  knn.class <- (knn_data == 'L')+0 #al posto di L metti la classe della prima cosa che viene classficata!
+  knn.B <- ifelse(knn.class==1, attributes(knn_data)$prob, 1 - attributes(knn_data)$prob)
+}
+  
+
+
+{#Scelta di k con CV leave one out basandosi su AER
+  
+  #Manuale (se chiede di settare seed, usa il metodo sotto!)
+  AER_cv=NULL
+  k_grid #da definire ,range di valori di k
+  n = dim(data)[1]
+  for(j in k_grid){
+    errors_cv = 0
+    for(i in 1:n){
+      knn_data <- knn(train = data[-i,1:2], test = data[i,1:2], cl = data[-i,]$gruppo, k = j , prob = T)
+      if(knn_data!=data[i,]$gruppo)
+        errors_cv <- errors_cv +1
+    }
+    AER_cv   <- c(AER_cv,sum(errors_cv)/n)
+  }
+  rbind(k_grid,AER_cv)
+  aer_min = min(AER_cv)
+  k_opt=k_grid[which.min(AER_cv)]
+  aer_min
+  k_opt
+  
+  
+  #Con R:
+  set.seed(321)
+  err = NULL
+  k_grid #da definire
+  for (k in k_grid) {
+    knn_data <- knn.cv(train = data[,1:2], cl = data$gruppo, k = k)
+    
+    errorCV <- (knn_data != data$gruppo)
+    err = c(err, sum(errorCV)/length(data$gruppo) )
+  }
+  err_min = min(err)
+  k_opt = k_grid[which.min(err)]
+  err_min
+  k_opt
+}
+
+{#Error rate su training set
+  k #da definire
+  knn_for_pred = knn(train = data[,1:2], test = data[,1:2], cl = data$gruppo, k = k , prob = T)
+  err_rate = sum(knn_for_pred != data$gruppo)/length(data$gruppo)
+  err_rate
+}
+
+
+{#Scelta di k con plot (solo nel caso uni-dimensionale!!!)
+  
+   x11(width = 35, height = 30)
+   par(mfrow=c(3,7)) #aggiusta in base al numero di grafici da fare
+   k_grid = seq(10,30,1)
+   x = data.frame(x = seq(min(data[,1]), max(data[,1]), length=200)) 
+   for(k in k_grid){
+     knn_data <- knn(train = data[,1], test = x, cl = data$risk, k = k, prob=T)
+     knn.class <- (knn_data == 'L')+0 #sostituisci a 'L' la classe predetta per la prima osservazione
+     knn.B <- ifelse(knn.class==1, attributes(knn_data)$prob, 1 - attributes(knn_data)$prob)
+     #plot(x[,1], cyto.LDA.B, type='l', col='red', lty=2, xlab='x', ylab='estimated posterior', main=k)
+     plot(x[,1], knn.B, type='l', col='black', lty=1, lwd=1, main = k )
+     abline(h = 0.5)
+   }
+}
+
+
+## 18.4) Prediction ############################################################
+
+k #da definire
+new_obs = data.frame(var1 = 1, var2 = -4)
+knn_for_pred = knn(train = data[,1:2], test = new_obs, cl = data$gruppo, k = k , prob = T)
+knn_for_pred
+
+
+## 18.5) Plot partition ########################################################
+
+{#Plot partizione in 2d 
+  
+  x11()
+  plot(data[,1:2], col = data$gruppo , pch = 20)
+  z = as.numeric(knn_data)
+  contour(x, y, matrix(z, 400), levels=c(1.5, 2.5), drawlabels=F, add=T)
+  colors = unique(data$gruppo)
+  legend("topleft", legend=unique(data$gruppo), fill=colors, cex=.7)
+  #NB : In matrix(z,quantit?), quantit? deve matchare con quella nella definizione
+  #      di x e di y!!!
+  
+}
 
 
 
@@ -317,3 +418,5 @@ table(true=data[,"y"], pred=predict(svmfit,newdata=data))
 
 testdat <- data.frame(x1=,x2=)
 ypred <- predict(bestmod,testdat)
+
+

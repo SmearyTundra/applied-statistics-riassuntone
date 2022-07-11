@@ -6,8 +6,7 @@ library(car)
 
 
 #### TO ADD 
-## FDR (FILE GRUPPO) - INDEPENDENT SAME MEASURE (MARTINA) - REPEATED MEASURES (FILE GRUPPO)
-
+## FDR (FILE GRUPPO) 
 
 
 
@@ -149,6 +148,14 @@ Bf <- rbind(IC.BF.1, IC.BF.2)
 dimnames(Bf)[[2]] <- c('inf','center','sup')
 Bf
 
+
+ICvar <- cbind(inf     = diag(d.cov)*(n-1) / qchisq(1 - alpha/(2*k), n-1),
+           center  = diag(d.cov),
+           sup     = diag(d.cov)*(n-1) / qchisq(alpha/(2*k), n-1))
+ICvar
+
+
+
 # Plot of confidence + T2 + bonf
 x11()
 plot(d, asp=1, pch=1, main='data of the differences',ylim=c(-15,60))
@@ -238,7 +245,7 @@ IC.T2
 
 
 
-#### BONFERRONI INTERVALS FOR THE MEANS
+#### BONFERRONI INTERVALS FOR THE DIFFERENCE OF MEANS
 # 1) Bonf intervals for the difference of means
 alpha <- 0.1
 IC <- cbind(t2.mean-t1.mean - sqrt(diag(Sp)*(1/n1+1/n2)) * qt(1 - alpha/(p*2), n1+n2-2),
@@ -249,6 +256,190 @@ IC
 
 
 
+#### BONUS: MANOVA TEST
+S1 <- cov(girona)
+S2 <- cov(terrassa)
+x11(width=21)
+par(mfrow=c(1,2))
+image(S1, col=heat.colors(100),main='Cov. S1', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2), (0:100)/100, na.rm=TRUE))
+image(S2, col=heat.colors(100),main='Cov. S2', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2), (0:100)/100, na.rm=TRUE))
+##le varianze possono essere considerate abbastanza simili
+### posso procedere con le analisi
 
+#USANDO MANOVA
+smean_girona <- sapply(girona, mean)
+smean_terrassa <- sapply(terrassa, mean)
+
+data <- rbind(girona, terrassa)
+fact <- as.factor(c(rep("girona", 35), rep("terrassa", 35)))
+
+#we perform a manova test
+man <- manova(as.matrix(data) ~ fact)
+summary.aov(man)
+summary.manova(man)
+#we have statistical evidence to reject the null hypothesis H0: mu_girona = mu_terrassa
+mcshapiro.test(man$residuals)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############# REPEATED MEASURES ##############
+
+d <- read.table ('d.txt', col.names=c('h.0','h.8','h.16','h.24'))
+
+mcshapiro.test(d)
+x11()
+matplot(t(d), type='l')
+
+### Perform a test at level 5% to prove that there is a difference
+### between the means of repeated measures
+n <- dim(d)[1]
+q <- dim(d)[2]
+
+M <- sapply(d,mean)
+M
+S <- cov(d)
+S
+
+# we build one of the possible contrast matrices to answer
+# the question
+C <- matrix(c(-1, 1, 0, 0,
+              -1, 0, 1, 0,
+              -1, 0, 0, 1), 3, 4, byrow=T)
+C
+# here we are looking at the effects on the d
+# between the 1st and the 2nd, 3rd, 4th
+
+# Test: H0: C%*%mu == 0 vs H1: C%*%mu != 0
+alpha   <- .05
+delta.0 <- c(0,0,0)
+
+Md <- C %*% M 
+Sd <- C %*% S %*% t(C)
+Sdinv <- solve(Sd)
+
+T2 <- n * t( Md - delta.0 ) %*% Sdinv %*% ( Md - delta.0 )
+
+cfr.fisher <- ((q-1)*(n-1)/(n-(q-1)))*qf(1-alpha,(q-1),n-(q-1)) 
+
+T2 < cfr.fisher
+T2
+cfr.fisher
+
+# T2 is much higher than cfr.fisher => the p-value will be very small
+P <- 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
+P
+
+### question (b)
+
+# It is implicitly asking for confidence intervals on the components
+# (for the mean of the increments after 8 hours, 16 hours and 24 hours)
+
+# Simultaneous T2 intervals
+IC.T2 <- cbind( Md - sqrt(cfr.fisher*diag(Sd)/n) , Md, Md + sqrt(cfr.fisher*diag(Sd)/n) )
+IC.T2
+
+# Bonferroni intervals 
+k     <- q - 1   # number of increments (i.e., dim(C)[1])
+cfr.t <- qt(1-alpha/(2*k),n-1)
+
+IC.BF <- cbind( Md - cfr.t*sqrt(diag(Sd)/n) , Md, Md + cfr.t*sqrt(diag(Sd)/n) )
+IC.BF
+
+
+x11()
+matplot(t(matrix(1:3,3,3)),t(IC.BF), type='b',pch='',xlim=c(0,4),xlab='',ylab='', main='Confidence intervals')
+segments(matrix(1:3,3,1),IC.BF[,1],matrix(1:3,3,1),IC.BF[,3], col='orange', lwd=2)
+points(1:3, IC.BF[,2], col='orange', pch=16)
+points(1:3+.05, delta.0, col='black', pch=16)
+segments(matrix(1:3+.1,3,1),IC.T2[,1],matrix(1:3+.1,3,1),IC.T2[,3], col='blue', lwd=2)
+points(1:3+.1,IC.T2[,2], col='blue', pch=16)
+legend('topright', c('Bonf. IC', 'Sim-T2 IC'), col=c('orange', 'blue'), lty=1, lwd=2)
+
+
+### what happens if we change the constrast matrix?
+Cbis <- matrix(c(-1, 1, 0, 0,
+                 0, -1, 1, 0,
+                 0, 0, -1, 1), 3, 4, byrow=T)
+Cbis
+# in this way we are looking at the mean increment of the d every 8 hours
+
+Mdbis <- Cbis %*% M 
+Sdbis <- Cbis %*% S %*% t(Cbis)
+Sdinvbis <- solve(Sdbis)
+
+T2bis <- n * t( Mdbis ) %*% Sdinvbis %*% Mdbis
+
+T2bis < cfr.fisher
+
+# compare the T2 test statistics associated with C and Cbis
+T2bis
+T2
+
+
+# What is changed?
+# The confidence intervals on the contrasts
+# (because we are looking at different contrasts!)
+
+IC.BFbis <- cbind( Mdbis - cfr.t*sqrt(diag(Sdbis)/n) , Mdbis, Mdbis + cfr.t*sqrt(diag(Sdbis)/n) )
+IC.T2bis <- cbind( Mdbis - sqrt(cfr.fisher*diag(Sdbis)/n) , Mdbis, Mdbis + sqrt(cfr.fisher*diag(Sdbis)/n) )
+
+IC.BFbis
+IC.BF
+
+IC.T2bis
+IC.T2
+
+### what if we want to verify the following hypothesis:
+### "the drug decreases the d of two units with respect to
+### the baseline at both 8 and 16 hours, and its effect vanishes in 24 hours
+### from the drug administration"
+
+C <- matrix(c(-1, 1, 0, 0,
+              -1, 0, 1, 0,
+              -1, 0, 0, 1), 3, 4, byrow=T)
+delta.0 <- c(-2,-2,0)
+
+# or
+C <- matrix(c(-1, 1, 0, 0,
+              0, -1, 1, 0,
+              0, 0, -1, 1), 3, 4, byrow=T)
+delta.0 <- c(-2,0,2)
+
+Md <- C %*% M 
+Sd <- C %*% S %*% t(C)
+Sdinv <- solve(Sd)
+
+T2 <- n * t( Md - delta.0 ) %*% Sdinv %*% ( Md - delta.0 )
+
+cfr.fisher <- ((q-1)*(n-1)/(n-(q-1)))*qf(1-alpha,(q-1),n-(q-1))
+T2 < cfr.fisher
+T2
+cfr.fisher
+
+# p-value
+P <- 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
+P
 
 

@@ -22,6 +22,8 @@ library(geoR)
 
 ### READING COORDINATES
 ### -----------------------
+# substitute sights with response
+# log.chlorofill with whatever covariate
 coordinates(d) <- c('x','y')
 bubble(d,'sights',do.log=TRUE,key.space='bottom')
 
@@ -41,6 +43,13 @@ plot(variogram(log(sights) ~ 1+log.chlorofill, d, alpha = c(0, 45, 90, 135)),pch
 v <- variogram(log(sights) ~ 1+log.chlorofill, d)
 v.fit <- fit.variogram(v, vgm(0.5, "Exp", 50000))  
 plot(v, v.fit, pch = 19)
+
+
+# Models
+#1    Nug                              Nug (nugget)
+#2    Exp                         Exp (exponential)
+#3    Sph                           Sph (spherical)
+#4    Gau                            Gau (gaussian)
 
 
 
@@ -75,3 +84,10 @@ pr
 
 #C'è già sopra la var: no non è rappresentativa! Si usa un universal kriging quindi la varianza è ampiamente
 #sottostimata, it does not account for the fact that sigma is unknown and it is estimated just running the algorithm (large underestimation of the uncertainty)
+
+
+
+
+
+
+

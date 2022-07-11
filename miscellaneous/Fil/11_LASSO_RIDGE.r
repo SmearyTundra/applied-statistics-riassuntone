@@ -77,3 +77,13 @@ abline(v=log(bestlam.lasso), lty=1)
 # Get the coefficients for the optimal lambda
 coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')[1:3,]
 coef.lasso 
+
+
+predict(fit.lasso, newx=as.matrix(data.new), s=bestlam.lasso, type = 'response')
+
+
+
+
+
+
+
