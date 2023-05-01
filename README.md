@@ -10,3 +10,6 @@ markdowns -> children markdowns (each lab)
 
 cheatsheet -> useful documentation for Rmarkdown
 dataset -> datasets imported and used in markdown
+
+
+knitr::spin('LAB_9.R', knit = FALSE)

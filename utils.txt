@@ -1,1 +1,0 @@
-knitr::spin('LAB_9.R', knit = FALSE)
