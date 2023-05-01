@@ -1,7 +1,9 @@
-# applied statistics riassuntone
- 
+# Applied statistics riassuntone
+
+formulari
+
 markdown_mother -> main file 
-markdown_mother_cache -> doesn't process output each knitting (NO TOUCHY)
+markdown_mother_cache -> doesn't process output each knitting (don't touch)
 
 images -> fig.path 
 markdowns -> children markdowns (each lab)
