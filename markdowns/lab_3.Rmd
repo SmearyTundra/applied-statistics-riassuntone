@@ -49,7 +49,7 @@ library(car)
 ```
 
 ```{r lab3, results=FALSE, fig.show='hide',render=pander::pander}
-dataset <- read.table(here::here('dataset','dataset_pca.txt'), header=T) 
+dataset <- read.table(here::here('markdowns','lab_3_data','dataset_pca.txt'), header=T) 
 
 dim(dataset)
 dimnames(dataset)
