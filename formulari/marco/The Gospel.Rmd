@@ -19,9 +19,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Foreword
 
-This is an R Markdown document. It summarizes the lab session of the course of Applied Statistics
-held by professor Secchi. We remember that Grasselli's mercy, grace and favour are made available
-for us through the intercession of Secchi.
+This is an R Markdown document but do not try to knit it.
+It summarizes the lab session of the course Applied Statistics held by Professor Secchi. 
+Use the Outline to move through the sections of the document and find what you are looking for.
+There will be many bugs and things to fix, some sections have been deprecated, be careful.
+Also take a look at the docx answer template, that will help you a lot during the exam.
+
+This is part of "The bible of applied statistics" project, it was written in the first semester after Grasselli said "I am not God, but ..."
+
 
 ## Table of contents
 
@@ -155,6 +160,15 @@ for(i in 1:4)
   matplot(t(projection), type='l', main = paste('First', i, 'PCs'), ylim=range(value))
   matplot(meanF, type='l', lwd=2, add=T)
 }
+
+# change of refence sys in loading NOT SHURE ABOUT
+load_value = as.matrix(load_value)[1:8,1:8]
+coor_comp = pc_value$scores[1,]
+coor_comp
+coord_std = t(coor_comp) %*% t(load_value) # row * matrix
+coord_std
+
+#
 
 ```
 
@@ -474,9 +488,9 @@ n = length(value)/(g*b)    # number of elements in each combined group
 # 1)  normality (multivariate) in each combined group
 Ps_combined = NULL
 for(level in levels(combined)){
-  Ps_combined = c(Ps_combined, mcshapiro.test(as.data.frame(data2ANOVA[combined == level,id_categories]))$p) # look for big p-value 
+  Ps_combined = c(Ps_combined, shapiro.test(value[combined == level])$p) # look for big p-value 
 }
-Ps_combined # look for big p-value 
+Ps_combined  # look for big p-value 
 
 # 2) same covariance structure (= same covariance matrix Sigma)
 var2ANOVA = NULL
@@ -668,6 +682,26 @@ T2 Hotelling Test:
     H0: delta == delta.0    vs    H1: delta != delta.0
         with delta.0=c(0,0)
 
+```{r T2 with A}
+n = dim(df)[1]
+p = dim(df)[2]
+x.mean   = sapply(df,mean)
+x.cov    = cov(df)
+
+alpha = 0.10
+cfr.fisher = (p*(n-1)/(n-p))*qf(1-alpha,p,n-p)
+
+A = rbind(c(1,0), c(0,1), c(-1,1))
+
+ICT2 = cbind(A %*% x.mean - sqrt(diag(A %*% x.cov %*% t(A))/n * cfr.fisher), 
+              A %*% x.mean,
+              A %*% x.mean + sqrt(diag(A %*% x.cov %*% t(A))/n * cfr.fisher)) 
+ICT2
+
+plot(df, asp=1)
+ellipse(x.mean, x.cov/n, cfr.fisher, add=T)
+```
+
 ```{r Hotelling_Test for repeated measure}
 
 load("mcshapiro.test.RData")
@@ -732,6 +766,47 @@ for (i in 1:p){
 }
 T2
 
+```
+
+```{r non differences}
+## Example 1D Candle 070920
+
+acoruna = read.table('acoruna.txt', header=T)
+pontevedra = read.table('pontevedra.txt', header=T)
+
+# The distribution of two different tapas are independent -> two differernt gaussian population!
+# I can't do the dataset of differences
+
+t1 = acoruna
+t2 = pontevedra
+
+n1 = dim(t1)[1] # n1=30
+n2 = dim(t2)[1] # n2=30
+p  = dim(t1)[2] # p=2
+
+# we compute the sample mean, covariance matrices and the matrix Spooled
+
+t1.mean = sapply(t1,mean)
+t2.mean = sapply(t2,mean)
+t1.cov  =  cov(t1)
+t2.cov  =  cov(t2)
+Sp      = ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+
+# Test H0: mu1 == mu2  vs  H1: mu1 != mu2
+# i.e.,
+# Test H0: mu1-mu2 == c(0,0)  vs  H1: mu1-mu2 != c(0,0)
+
+alpha   = .01
+delta.0 = c(0,0)
+Spinv   = solve(Sp)
+
+T2 = n1*n2/(n1+n2) * (t1.mean-t2.mean-delta.0) %*% Spinv %*% (t1.mean-t2.mean-delta.0)
+
+cfr.fisher = (p*(n1+n2-2)/(n1+n2-1-p))*qf(1-alpha,p,n1+n2-1-p)
+T2 < cfr.fisher # FALSE: statistical evidence to reject H0 at level 1%
+
+P = 1 - pf(T2/(p*(n1+n2-2)/(n1+n2-1-p)), p, n1+n2-1-p)
+P # 0.0004434524
 ```
 
 ```{r Hotelling Contrast matrix}
@@ -820,6 +895,17 @@ IC.T2
 
 ```
 
+## t-test
+
+```{r mean difference not paired}
+deltac <- df_candle[,1] - df_candle[,2] # ~ N(muc, a'SIGMAa)
+deltas <- df_sun[,1] - df_sun[,2] # ~ N(mus, a'SIGMAa)
+
+t.test(deltac, deltas, alternative= "greater", var.equal = T,
+       conf.level = 1-alpha, paired = F, mu = 0 )
+```
+
+
 ## Elliptical region
 
 ```{r Elliptical region}
@@ -848,6 +934,17 @@ for (i in 1:p){
 T2
 
 library(car)
+
+# Plot ellipse with directions
+x11()
+plot(data_can, asp=1, xlab='pc 1', ylab='pc 2',pch=20)
+ellipse(df_mean, df_cov/n, radius = sqrt(cfr.fisher), add=T,lwd=3, col='red') #S sarebbe la matr cov
+#al posto di radius metti level = 0.55 per mettere la proporzione(0.55) di punti all'interno
+abline(a = df_mean[2] - eigen(df_cov)$vectors[2,1]/eigen(df_cov)$vectors[1,1]*df_mean[1], b = eigen(df_cov)$vectors[2,1]/eigen(df_cov)$vectors[1,1], lty = 2, col = 'dark red', lwd = 2)
+abline(a = df_mean[2] - eigen(df_cov)$vectors[2,2]/eigen(df_cov)$vectors[1,2]*df_mean[1], b = eigen(df_cov)$vectors[2,2]/eigen(df_cov)$vectors[1,2], lty = 2, col = 'red', lwd = 2)
+grid()
+
+
 
 # plot of ellipse with simultaneous CI
 x11()
@@ -899,7 +996,7 @@ df_mean
 r = sqrt(cfr.fisher)
 # r = sqrt(qchisq(1-alpha,p))
 # Length of the semi-axes:
-semi_ax = r*sqrt(eigen(df_cov)$values)  
+semi_ax = r*sqrt(eigen(df_cov/n)$values)  # /n for confidence
 # Analitical expr: x^2 / a^2 + y^2 / b^2 = 1 se centrata nell'origine degli assi 
 ```
 
@@ -965,6 +1062,77 @@ points(centroids, pch = 4, cex = 2, lwd = 2) # col = c(1:n_cluster+1)
 
 ######### da sistemare
 
+```{r Bonf con C differneces}
+
+n = dim(df)[1]
+
+x.mean   = colMeans(df)
+x.cov    = cov(df)
+x.invcov = solve(x.cov)
+
+C = matrix(c(-1, 1, 0, 0, 0, 0, 0,
+               0, -1, 1, 0, 0, 0, 0,
+               0, 0, -1, 1, 0, 0, 0,
+               0, 0, 0, -1, 1, 0, 0,
+               0, 0, 0, 0, -1, 1, 0,
+               0, 0, 0, 0, 0, -1, 1), 6, 7, byrow=T)
+
+Md = C %*% x.mean 
+Sd = C %*% x.cov %*% t(C)
+Sdinv = solve(Sd)
+
+# T2 = n * t( Md - delta.0 ) %*% Sdinv %*% ( Md - delta.0 )
+# 
+# cfr.fisher = ((q-1)*(n-1)/(n-(q-1)))*qf(1-alpha,(q-1),n-(q-1))
+# T2 < cfr.fisher
+# 
+# P = 1-pf(T2*(n-(q-1))/((q-1)*(n-1)),(q-1),n-(q-1))
+# P
+
+alpha = 0.10
+k = 4
+cfr.t = qt(1-alpha/(2*k),n-1)
+
+ICB = cbind(Low = Md-cfr.t*sqrt(diag(Sd)/n), Cen = Md, Upp = Md+cfr.t*sqrt(diag(Sd)/n))
+ICB 
+
+
+```
+
+```{r Bonf post Anova}
+fit3 <- aov(price ~ type, data=df)
+summary.aov(fit3)
+
+
+n       <- length(df$price)      # total number of obs.
+ng      <- table(df$type)       # number of obs. in each group
+treat   <- levels(as.factor(df$type))     # levels of the treatment
+g       <- length(treat)
+
+
+
+k <- g*(g-1)/2
+alpha= 0.05
+
+
+Mediag  <- tapply(df$price, df$type, mean)
+SSres <- sum(residuals(fit3)^2)
+S <- SSres/(n-g)
+
+# CI for all the differences
+ICrange=NULL
+for(i in 1:(g-1)) {
+    for(j in (i+1):g) {
+        print(paste(treat[i],"-",treat[j]))        
+        print(as.numeric(c(Mediag[i]-Mediag[j] - qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )),
+                           Mediag[i]-Mediag[j] + qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )))))
+        ICrange=rbind(ICrange,as.numeric(c(L = Mediag[i]-Mediag[j] - qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )), C = Mediag[i]-Mediag[j],
+                                           U = Mediag[i]-Mediag[j] + qt(1-alpha/(2*k), n-g) * sqrt( S * ( 1/ng[i] + 1/ng[j] )))))
+    }}
+
+ICrange
+
+```
 
 ```{r Gabri Bonf mean var}
 alpha = 0.05
@@ -995,6 +1163,34 @@ Ps
 IC
 ```
 
+```{r Bonf easy}
+t1 = df[which(cluster_es == 1),]
+t2 = df[which(cluster_es == 2),]
+
+n1 = dim(t1)[1] # n1=30
+n2 = dim(t2)[1] # n2=30
+p  = dim(t1)[2] # p=2
+
+
+t1.mean = sapply(t1,mean)
+t2.mean = sapply(t2,mean)
+t1.cov  =  cov(t1)
+t2.cov  =  cov(t2)
+Sp      = ((n1-1)*t1.cov + (n2-1)*t2.cov)/(n1+n2-2)
+
+alpha   = .1
+k = p  # 2
+cfr.t = qt(1-alpha/(2*k),n1+n2-2)
+
+IC.BF.1 = c(t2.mean[1]-t1.mean[1]-cfr.t*sqrt(Sp[1,1]*(1/n1+1/n2)), t2.mean[1]-t1.mean[1], t2.mean[1]-t1.mean[1]+cfr.t*sqrt(Sp[1,1]*(1/n1+1/n2)) )
+IC.BF.2 = c(t2.mean[2]-t1.mean[2]-cfr.t*sqrt(Sp[2,2]*(1/n1+1/n2)), t2.mean[2]-t1.mean[2], t2.mean[2]-t1.mean[2]+cfr.t*sqrt(Sp[2,2]*(1/n1+1/n2)) )
+IC.BF = rbind(IC.BF.1, IC.BF.2)
+dimnames(IC.BF)[[2]] = c('inf', 'cent' ,'sup')                        
+IC.BF
+
+
+
+```
 
 ```{r Bonferroni}
 ## Versione per IC Bonf media colonne simultanea
@@ -1167,6 +1363,14 @@ IC.T2 = rbind(IC.T2.X1, IC.T2.X2)
 dimnames(IC.T2)[[2]] = c('inf','sup')                        
 IC.T2
 
+# Simultaneous BONF
+k=2
+alpha <- 0.05
+IC <- cbind(t2.mean-t1.mean - sqrt(diag(Sp)*(1/n1+1/n2)) * qt(1 - alpha/(p*2), n1+n2-2),
+            t2.mean-t1.mean,
+            t2.mean-t1.mean + sqrt(diag(Sp)*(1/n1+1/n2)) * qt(1 - alpha/(p*2), n1+n2-2))
+IC
+
 ```
 
 ## LDA and QDA TO CHECK
@@ -1201,11 +1405,14 @@ p_val
 # 2) equal variance (univariate)
 # var.test(cyto[A,1],cyto[B,1]) # if univariate
 bartlett.test(values, groups)
+# look for big P-val
 
 library(MASS)
 
 values_lda = lda(values, groups) # prior=c(0.95,0.05)
 values_lda
+# covariances
+values_lda$scaling
 
 # "coefficients of linear discriminants" and "proportion of trace":
 # Fisher discriminant analysis. 
@@ -1286,11 +1493,21 @@ for (i in levels(groups)){
 }
 p_val
 
+
+## NOT NEEDE HERE JUST TO SPEED UP CODING
+# 2) equal variance (univariate)
+# var.test(cyto[A,1],cyto[B,1]) # if univariate
+bartlett.test(values, groups)
+# look for big P-val
+
+
 library(MASS)
 
 
-values_qda = qda(values, groups)
+values_qda = qda(values, groups) # prior
 values_qda
+# covariances
+values_qda$scaling
 
 ##### Case of different misclassification cost #####
 # misclassification costs (true - assigned)
@@ -1328,17 +1545,17 @@ predict_qda = predict(values_qda, values)
 # compute the APER
 table(class.true=groups, class.assigned=predict_qda$class)
 errorsq = (predict_qda$class != groups)
-APERq   = sum(errorsq)/length(species.name)
+APERq   = sum(errorsq)/length(groups)
 APERq
 # Remark: correct only if we estimate the priors through the sample frequencies!
 # Else see lda
 
 # Compute the estimate of the AER by leave-out-out cross-validation 
-cv_qda = qda(values, groups, CV=T)
+cv_qda = qda(values, groups, CV=T) # PRIOR
 cv_qda$class
 table(class.true=groups, class.assignedCV=cv_qda$class)
 errorsqCV = (cv_qda$class != groups)
-AERqCV   = sum(errorsqCV)/length(species.name)
+AERqCV   = sum(errorsqCV)/length(groups)
 AERqCV
 # Remark: correct only if we estimate the priors through the sample frequencies!
 
@@ -1408,6 +1625,7 @@ values = iris[,1:2] # 2D dataset
 # values = values + cbind(rnorm(dim(values)[1], sd=0.025))    
 groups = iris[,5]
   
+library(class)
 k = 15
 
 plot(values, main='Values', pch=20, col = as.numeric(groups)+1)
@@ -1424,12 +1642,49 @@ z  = as.numeric(values_knn)
 contour(x, y, matrix(z, 200), levels=c(1.5, 2.5), drawlabels=F, add=T)
 
 
+# CV for K
+set.seed(19)
+test = 10:30
+err = {}
+for (k in test) {
+  fish.knn = knn.cv(train = values, cl = groups, k = k)
+  
+  errorCV = (fish.knn != groups)
+  err = c(err, sum(errorCV)/length(groups))
+}
+min(err)
+kbest = test[1]+which.min(err)-1
+kbest
+
+
+# APER KNN not verified
+kn_5.APER = knn(train = data[,1:2], test = data[,1:2], cl = data$activity, k = 5)
+t.k = table(true = data$activity, classif = kn_5.APER)
+gr.k = dim(t)[1]
+error.rate.k = sum(kn_5.APER!=data$activity)/length(data$activity)
+APER.k = 0
+for(i in 1:gr.k){
+  APER.k = APER.k + pr[i]*sum(t.k[i, -i])/sum(t.k[i,])
+}
+APER
+
+APER.k
+error.rate.k
+
+
 ```
 
 
 ## Linear models
 
 ```{r Polinomial LM}
+df = read.table("leaven.txt", header = TRUE)
+df$time2 = df$time^2
+
+###### Point a ####
+mod = lm(volume ~ time + time:yeast+ time2 + time2:yeast, data=df)
+summary(mod)
+
 
 # grid to plot
 data.plot = NULL
@@ -1505,7 +1760,8 @@ abline(h=sigma^2, col='blue')
 df = read.table("tide.txt")
 head(df)
 plot(df$t, df$h)
-mod = lm(h ~ I(sin(2*pi*t/28)) + I(sin(pi*(t-82)/365)) + t, data = df)
+
+mod = lm(h ~ price ~ method + dimension + dimension:method + ncolors  + ncolors:method, data = df)
 summary(mod)
 
 library(car)
@@ -1514,13 +1770,15 @@ vif(mod) # hight values means colinearity
 # plot summary lm
 par(mfrow = c(2,2))
 plot(mod)
+par(mfrow=c(1,1))
 
 # controllo normalità dei residui
 shapiro.test(mod$residuals)
 
 # array of betas
 coefs = coef(mod)  
-sigma = sd(mod$residuals)
+summary(mod)$sigma 
+# sigma = sd(mod$residuals)
 
 # try to remove covariates
 linearHypothesis(mod, rbind(c(0,1,0,0), c(0,0,1,0)), c(0,0))
@@ -1583,6 +1841,8 @@ prediction
 ```
 
 ```{r LM Ridge}
+library(glmnet)
+
 ## RIDGE base ##
 fit.ridge = lm.ridge(distance ~ speed1 + speed2, lambda = lambda)
 # Note: to fit the model, R automatically centers X and Y 
@@ -1629,6 +1889,9 @@ abline(v=log(bestlam.ridge))
 
 
 ### Lasso regression
+x = model.matrix(Y ~ X1 + X2 + X3 + X4)[,-1] # matrix of predictors
+y = Y # vector of response
+lambda.grid = 10^seq(5,-3,length=50)
 fit.lasso = glmnet(x,y, lambda = lambda.grid, alpha=1) # alpha=1 -> lasso 
 
 plot(fit.lasso,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
@@ -1678,7 +1941,19 @@ sum(abs(coef.lasso[-1]))    # lasso
 
 
 # To predict with lasso or ridge create a new lm with the needed regressors
+mod2 = lm(watchtv ~ age +distance+siblings+computertime+musiccds+playgames, data=df)
+summary(mod2)
+# model assumptions mmm 
 
+predi = predict(mod2, new) # 6.839906 
+
+# OR 
+num <-c(1,1,21,73,100,1,10,2,35,4)
+t(as.matrix(coef.lasso)) %*% num    # 7.17543
+
+# OR
+esito <- predict(fit.lasso, s=bestlam.lasso, newx = as.matrix(new), type="response")
+esito # 7.17543
 ```
 
 ```{r Logistic}
@@ -1752,7 +2027,7 @@ text(prune.boston,pretty=0)
 ```{r LM Teo}
 
 ##### Basic regression + linear hyp + pred ####
-
+# setwd("/Users/marco/Desktop/Esame Applied/applied-statistics-riassuntone/tde/AlfreJac/2020/150620")
 airfoil = read.table('airfoil.txt', header=T)
 head(airfoil)
 airfoil$velocity = factor(airfoil$velocity)
@@ -1904,7 +2179,7 @@ coef(regfit.full, best_model_id)
 		Cov(z(s1),z(s2))=Cov(delts(s1),delta(s2))
 -> foto fitted model with gls
 
--> universal kriging -> we relax secodn order stationarity, say E[z(si)]=msi
+-> universal kriging -> we relax second order stationarity, say E[z(si)]=msi
 
 BLUE = TRUE -> MEAN
 BLUE = FALSE -> PREDICTION
@@ -1916,8 +2191,10 @@ Model assumptions
 - The universal Kriging model assumes z_s = m_s + delta_s for any s in D (domain) where m_s is called drift and describes the non constant spacial mean variation. Moreover we assume E[delta_s] = 0 for any s in D (so that E[z_s] = m_s) and that Cov(z_s1,z_s2) = Cov(delta_s1,delta_s2) for any pair. We also assume that C(•) is known and that m_s follows a linear model m_s(t) = sum_l=0^L a_l(t) f_l(s) for s in D and t in T, where f are known functions of s and a_l are coefficients independent from the spacial location.
 
 ```{r gls}
+
 hot.gstat = gstat(id = 'price', formula = price ~ distance + winter + winter:distance, data = hotels, nmax = 100, model=v.fit2, set = list(gls=1))
 hot.gstat
+
 # Estimate the variogram from GLS residuals:
 v.gls=variogram(hot.gstat)
 plot(v.gls)
@@ -1942,8 +2219,8 @@ a0= predict(hot.gstat, hotels[2,], BLUE = TRUE)$price.pred - a1*car[2,4] #use or
 #    - WLS
 #    - se vuoi fare una predizione relativa a quel fenomeno
 
-n <- dim(df)[1]
-p <- dim(df)[2]
+n = dim(df)[1]
+p = dim(df)[2]
 
 library(sp)           ## data management
 library(lattice)      ## data management
@@ -1952,55 +2229,55 @@ library(gstat)        ## Geostatistics
 
 ## gls to estimate parameter
 
-coordinates(df) <- c('x','y')
-df$log.sights <- log(df$sights)
+coordinates(df) = c('x','y')
+df$log.sights = log(df$sights)
 
-v.t <- variogram(log.sights ~ log.chlorofill , data=df)
+v.t = variogram(log.sights ~ log.chlorofill , data=df)
 plot(v.t,pch=19)
 
 # Check assumprion on isotropy
-plot(variogram(log(sights) ~ 1+log.chlorofill, d, alpha = c(0, 45, 90, 135)),pch=19)
+plot(variogram(log(sights) ~ 1+log.chlorofill, df, alpha = c(0, 45, 90, 135)),pch=19)
 
 # Choose values from the previous plot
-v.fit1 <- fit.variogram(v.t, vgm(0.5, "Exp", 100000))    ###vgm(psill, 'type', range, nugget)
+v.fit1 = fit.variogram(v.t, vgm(0.5, "Exp", 100000))    ###vgm(psill, 'type', range, nugget)
 plot(v.t, v.fit1, pch = 3)
 v.fit1
 
 
-g.t <- gstat(formula = log.sights ~ log.chlorofill , data = df, model = v.fit1)
+g.t = gstat(formula = log.sights ~ log.chlorofill , data = df, model = v.fit1) #set = list(gls=1)
 
 # predict hotels[1,]
 # Estimate the mean: use the argument 'BLUE=TRUE' otherwise the observation
-y1 <- predict(g.t, df[1,], BLUE = TRUE)$var1.pred
-y2 <- predict(g.t, df[2,], BLUE = TRUE)$var1.pred
+y1 = predict(g.t, df[1,], BLUE = TRUE)$var1.pred  # NO winter
+y2 = predict(g.t, df[2,], BLUE = TRUE)$var1.pred  # NO winter
 
 # Coefficients
-a1 = (y2-y1)/(df[2,]$log.chlorofill - df[1,]$log.chlorofill)
-a0 = y1 - a1*df[1,]$log.chlorofill
+a1_no = (y2-y1)/(df[2,]$distance - df[1,]$distance)   # -0.009348031
+a0_no = y1 - a1_no*df[1,]$distance
 
 ## Kriging from coordinates
-datum <- as.data.frame(t(matrix(c(253844.8,385997.7))))
+datum = as.data.frame(t(matrix(c(253844.8,385997.7))))
 names(datum)=c('x','y')
 coordinates(datum)=c('x','y')
 
-v.t2 <- variogram(log.chlorofill ~ 1, data=df)
+v.t2 = variogram(log.chlorofill ~ 1, data=df)
 plot(v.t2,pch=19)
 
-v.fit2 <- fit.variogram(v.t2, vgm(3, "Sph", 50000))    ###vgm(psill, 'type', range, nugget)
+v.fit2 = fit.variogram(v.t2, vgm(3, "Sph", 50000))    ###vgm(psill, 'type', range, nugget)
 plot(v.t2, v.fit2, pch = 3)
 v.fit2
 # predict first value
-g.t2 <- gstat(formula = log.chlorofill ~ 1 , data = df, model = v.fit2)
-pred.log.sight <- predict(g.t2, df[1,], BLUE = TRUE)$var1.pred
+g.t2 = gstat(formula = log.chlorofill ~ 1 , data = df, model = v.fit2)
+pred.log.sight = predict(g.t2, df[1,], BLUE = TRUE)$var1.pred
 
 # predict second value
 s0 = c(514811.55, 5037308.54) 
-datum.pred <- data.frame(x=s0[1], y = s0[2], colour="red")
+datum.pred = data.frame(x=s0[1], y = s0[2], colour="red")
 coordinates(datum.pred)=c('x','y')
 predict(g.t, datum.pred, BLUE = FALSE)  # 10.48128 2.865919
 
 
-datum.pred <- as.data.frame(t(matrix(c(253844.8,385997.7, pred.log.sight))))
+datum.pred = as.data.frame(t(matrix(c(253844.8,385997.7, pred.log.sight))))
 names(datum.pred)=c('x','y','log.chlorofill')
 coordinates(datum.pred)=c('x','y')
 predict(g.t, datum.pred, BLUE = FALSE)$var1.pred
@@ -2028,7 +2305,7 @@ time = 1:365
 x_max = dim(data)[1]
 n_bas = 365
 basis_1 = create.fourier.basis(rangeval=c(0,x_max),nbasis=n_bas)
-data_fd_1 = Data2fd(y = data,argvals = time,basisobj = basis_1)
+data_fd_1 = Data2fd(y = as.matrix(data),argvals = time,basisobj = basis_1)
 plot.fd(data_fd_1)
 
 # Better to use a b-spline basis
@@ -2037,7 +2314,7 @@ degree = 3
 order = degree + 1
 x_max = dim(data)[1]
 time = 1:24
-basis = create.bspline.basis(rangeval=c(0,x_max),nbasis=n_bas, norder=norder)
+basis = create.bspline.basis(rangeval=c(0,x_max),nbasis=n_bas, norder=order)
 data_fd = Data2fd(y = data,argvals = time,basisobj = basis)
 plot.fd(data_fd, main="B-splines")
 
@@ -2146,11 +2423,41 @@ Xsp0bis = eval.fd(abscissa, Xsp$fd) #  the curve smoothing the data
 plot(abscissa,Xobs0,xlab="t",ylab="observed data")
 points(abscissa,Xsp0bis ,type="l",col="red",lwd=2)
 
+# Approximate pointwise confidence intervals #
+# As in linear models, we can estimate the variance of x(t) as
+# sigma^2*diag[phi*(phi'phi)^{-1}(phi)']
+basismat <- eval.basis(abscissa, basis)
+S <- basismat%*%solve(t(basismat)%*%basismat)%*%t(basismat) #projection operator 
+sum(diag(S))
+est_coef = lsfit(basismat, Xobs0, intercept=FALSE)$coef
+Xsp0 <- basismat %*% est_coef
+Xsp <- smooth.basis(argvals=abscissa, y=Xobs0, fdParobj=basis)
+df <- Xsp$df
+sigmahat <- sqrt(sum((Xsp0-Xobs0)^2)/(NT-df)) #estimate of sigma
+lb <- Xsp0-qnorm(0.975)*sigmahat*sqrt(diag(S))
+ub <- Xsp0+qnorm(0.975)*sigmahat*sqrt(diag(S))
+
+x11()
+plot(abscissa,Xsp0,type="l",col="blue",lwd=2,ylab="")
+points(abscissa,lb,type="l",col="blue",lty="dashed")
+points(abscissa,ub,type="l",col="blue",lty="dashed")
+# points(abscissa,truecurve$X0vera,type="l")
+
+
+
+# Plot of many function
+data.fd = Data2fd(y = data, argvals = abscissa,basisobj = basis)
+x11()
+layout(cbind(1,2))
+matplot(data, type = "l", main = "Emprical", xlab = "frequencies")
+plot.fd(data.fd, xlab = "frequencies", main = "smoothed")
 
 
 ```
 
 ```{r kma}
+library(fdakma)
+
 x = kma.data$x   # abscissas
 y0 = kma.data$y0 # evaluations of original functions
 y1 = kma.data$y1 # evaluations of original functions' first derivatives
